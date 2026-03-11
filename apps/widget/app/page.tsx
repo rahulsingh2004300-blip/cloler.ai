@@ -8,6 +8,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@cloler/ui/components/card";
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@cloler/ui/components/field";
 import { Input } from "@cloler/ui/components/input";
 import { Textarea } from "@cloler/ui/components/textarea";
 
@@ -18,25 +24,32 @@ export default function HomePage() {
         <Card className="border-slate-200/80 bg-white shadow-sm">
           <CardHeader className="gap-3">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Widget</Badge>
+              <Badge>Widget</Badge>
               <Badge variant="outline">Preview</Badge>
             </div>
             <CardTitle className="text-2xl tracking-tight">Contact form shell</CardTitle>
-            <CardDescription>Simple shared inputs only</CardDescription>
+            <CardDescription>Official shadcn field + input primitives</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Name</div>
-              <Input placeholder="Enter name" />
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Phone</div>
-              <Input placeholder="Enter phone number" />
-            </div>
-            <div className="space-y-2">
-              <div className="text-sm font-medium">Message</div>
-              <Textarea placeholder="Enter callback message" className="min-h-28" />
-            </div>
+          <CardContent>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="name">Name</FieldLabel>
+                <Input id="name" placeholder="Enter name" />
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="phone">Phone</FieldLabel>
+                <Input id="phone" placeholder="Enter phone number" />
+                <FieldDescription>Shared input component only.</FieldDescription>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="message">Message</FieldLabel>
+                <Textarea
+                  id="message"
+                  placeholder="Enter callback message"
+                  className="min-h-28"
+                />
+              </Field>
+            </FieldGroup>
           </CardContent>
           <CardFooter className="justify-end border-t">
             <Button type="button">Submit</Button>
