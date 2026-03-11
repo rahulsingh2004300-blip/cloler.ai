@@ -33,64 +33,66 @@ export function StudioShell({
   children,
 }: StudioShellProps) {
   return (
-    <main className="relative isolate overflow-hidden px-6 py-10 sm:px-10 lg:px-12">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[26rem]"
-        style={{
-          background:
-            "radial-gradient(circle at top left, var(--app-accent-soft), transparent 34%), radial-gradient(circle at 82% 12%, rgba(255,255,255,0.55), transparent 16%)",
-        }}
-      />
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col gap-6">
-        <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <article className="rounded-[2.2rem] border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-surface)] px-6 py-7 shadow-[0_28px_90px_-48px_var(--cl-color-shadow)] backdrop-blur sm:px-8 sm:py-8">
-            <div className="inline-flex rounded-full bg-slate-950 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-white">
+    <main className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <article className="rounded-2xl border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-surface)] p-6 shadow-sm sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
               {eyebrow}
-            </div>
-            <h1 className="mt-5 max-w-3xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+            </p>
+            <h1 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
               {title}
             </h1>
-            <p className="mt-5 max-w-3xl text-base leading-7 text-slate-600 sm:text-lg">
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600 sm:text-base">
               {description}
             </p>
             {pills?.length ? (
-              <div className="mt-6 flex flex-wrap gap-2">
+              <div className="mt-5 flex flex-wrap gap-2">
                 {pills.map((pill) => (
                   <span
                     key={pill}
-                    className="rounded-full border border-[color:var(--cl-color-line)] bg-white/65 px-3 py-2 text-xs font-medium uppercase tracking-[0.2em] text-slate-600"
+                    className="rounded-full border border-[color:var(--cl-color-line)] bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
                   >
                     {pill}
                   </span>
                 ))}
               </div>
             ) : null}
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <div className="mt-6 flex flex-wrap gap-3">
               {actions.map((action) => (
                 <ActionLink key={action.label} {...action} />
               ))}
             </div>
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              {metrics.map((metric) => (
-                <MetricCard key={metric.label} {...metric} />
-              ))}
-            </div>
-            {footnote ? (
-              <div className="mt-8 text-sm text-slate-500">{footnote}</div>
-            ) : null}
           </article>
-          <div className="grid gap-4">
+          <aside className="rounded-2xl border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-surface)] p-6 shadow-sm">
             {spotlight ?? (
-              <MetricCard
-                label="System"
-                value="Ready"
-                note="Shared UI foundation is active across the full workspace."
-                emphasis
-              />
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-500">
+                  Status
+                </p>
+                <h2 className="text-xl font-semibold text-slate-950">
+                  Shared foundation ready
+                </h2>
+                <p className="text-sm leading-6 text-slate-600">
+                  This surface is intentionally minimal until the app-specific
+                  workflows are implemented.
+                </p>
+              </div>
             )}
-          </div>
+          </aside>
         </section>
-        <section className="grid gap-4 md:grid-cols-3">{children}</section>
+
+        <section className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {metrics.map((metric) => (
+            <MetricCard key={metric.label} {...metric} />
+          ))}
+        </section>
+
+        {footnote ? (
+          <div className="mt-4 text-sm text-slate-500">{footnote}</div>
+        ) : null}
+
+        <section className="mt-6 grid gap-4 lg:grid-cols-3">{children}</section>
       </div>
     </main>
   );

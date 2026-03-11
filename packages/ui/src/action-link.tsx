@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 export type ActionLinkProps = {
   href: string;
   label: string;
@@ -14,32 +12,27 @@ export function ActionLink({
   variant = "primary",
 }: ActionLinkProps) {
   const isPrimary = variant === "primary";
-  const style: CSSProperties | undefined = isPrimary
-    ? {
-        backgroundColor: "var(--app-accent)",
-        color: "#ffffff",
-      }
-    : undefined;
 
   return (
     <a
       href={href}
       className={[
-        "group flex min-h-[5.5rem] flex-col justify-between rounded-[1.6rem] border px-4 py-4 transition-transform duration-200 hover:-translate-y-0.5",
+        "min-w-[13rem] rounded-xl border px-4 py-3 transition-colors",
         isPrimary
-          ? "border-transparent shadow-[0_24px_60px_-36px_rgba(15,23,42,0.7)]"
-          : "border-[color:var(--cl-color-line)] bg-white/70 text-slate-900",
+          ? "border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+          : "border-[color:var(--cl-color-line)] bg-white text-slate-900 hover:bg-slate-50",
       ].join(" ")}
-      style={style}
     >
-      <span className="text-base font-semibold tracking-tight">{label}</span>
-      <span
+      <p className="text-sm font-medium">{label}</p>
+      <p
         className={
-          isPrimary ? "text-sm text-white/78" : "text-sm text-slate-500"
+          isPrimary
+            ? "mt-1 text-sm text-slate-300"
+            : "mt-1 text-sm text-slate-500"
         }
       >
         {caption}
-      </span>
+      </p>
     </a>
   );
 }

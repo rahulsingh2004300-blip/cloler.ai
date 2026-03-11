@@ -3,17 +3,6 @@
 
 :root {
   --app-accent: #2563eb;
-  --app-accent-soft: rgba(37, 99, 235, 0.18);
-  --app-background:
-    radial-gradient(
-      circle at top left,
-      rgba(37, 99, 235, 0.22),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at 82% 10%,
-      rgba(56, 189, 248, 0.16),
-      transparent 16%
-    ),
-    linear-gradient(180deg, #f8fbff 0%, #eef2ff 100%);
+  --app-accent-soft: rgba(37, 99, 235, 0.08);
+  --app-background: #f8fafc;
 }

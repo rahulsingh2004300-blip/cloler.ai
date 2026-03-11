@@ -1,41 +1,35 @@
-import {
-  FeatureCard,
-  MetricCard,
-  SectionHeading,
-  StudioShell,
-} from "@cloler/ui";
+import { FeatureCard, SectionHeading, StudioShell } from "@cloler/ui";
 
 const actions = [
   {
-    href: "#operations",
-    label: "Monitor system health",
-    caption: "Review tenant activity, telephony health, and incidents.",
+    href: "#areas",
+    label: "Planned areas",
+    caption: "Compliance, support, and billing will live here.",
   },
   {
-    href: "#reviews",
-    label: "Open compliance queue",
-    caption:
-      "Consent, DND violations, and abuse review stay operationally visible.",
+    href: "#next",
+    label: "Next step",
+    caption: "Role-based access will be added after auth is live.",
     variant: "secondary" as const,
   },
 ];
 
 const metrics = [
   {
-    label: "Admin lens",
-    value: "Cross-tenant",
-    note: "Support, finance, compliance, and platform health in one place.",
-  },
-  {
-    label: "Alerts",
-    value: "Telegram-first",
-    note: "Fast operator feedback for bookings, failures, and escalations.",
+    label: "Status",
+    value: "Scaffold",
+    note: "No admin workflows are implemented yet.",
     emphasis: true,
   },
   {
-    label: "Audit stance",
-    value: "Traceable",
-    note: "Voice consent and DND outcomes become first-class records.",
+    label: "Focus",
+    value: "Internal tools",
+    note: "This app is reserved for platform operations.",
+  },
+  {
+    label: "Next",
+    value: "Access control",
+    note: "Clerk auth and roles will gate this app in Step 4.",
   },
 ];
 
@@ -43,56 +37,53 @@ export default function HomePage() {
   return (
     <StudioShell
       eyebrow="cloler.ai / admin"
-      title="Internal operations that keep a legally sensitive voice product under control."
-      description="The admin console is where internal teams supervise tenant health, payment issues, compliance events, suspicious voice usage, and bulk-calling violations before they become platform risk."
-      pills={["Compliance-first", "Platform monitoring", "Support tooling"]}
+      title="Admin console scaffold"
+      description="This app is only a clean placeholder right now. It exists to establish routing, layout, and shared components before any internal operations workflows are built."
+      pills={["Admin", "Internal", "Scaffold"]}
       actions={actions}
       metrics={metrics}
-      footnote={
-        <p>
-          The design foundation intentionally makes admin feel more operational
-          and less marketing-like, while still staying in the same family as the
-          customer-facing apps.
-        </p>
-      }
       spotlight={
-        <div className="rounded-[2rem] border border-[color:var(--cl-color-line)] bg-white/80 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)] backdrop-blur">
+        <div className="space-y-4" id="areas">
           <SectionHeading
-            eyebrow="Ops focus"
-            title="The riskiest workflows stay visible"
-            description="This is where we will surface DND rejection spikes, abusive outbound patterns, consent issues, payment failures, and telephony provider incidents."
+            eyebrow="Planned use"
+            title="Reserved for platform operations"
+            description="Once auth and permissions are in place, this app will hold internal-only tools for compliance review, support, and billing supervision."
           />
-          <div className="mt-6 grid gap-3">
-            <MetricCard
-              label="Critical queue"
-              value="Violations + incidents"
-              note="Prioritize platform-protecting actions first."
-              emphasis
-            />
-            <MetricCard
-              label="Support queue"
-              value="Org-level issues"
-              note="Escalations, refunds, and unusual usage patterns."
-            />
-          </div>
+          <ul className="space-y-2 text-sm text-slate-600">
+            <li className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 px-4 py-3">
+              Compliance and DND review
+            </li>
+            <li className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 px-4 py-3">
+              Tenant support and escalations
+            </li>
+            <li className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 px-4 py-3">
+              Billing and platform health
+            </li>
+          </ul>
         </div>
+      }
+      footnote={
+        <p id="next">
+          This stays intentionally plain until protected admin workflows are
+          implemented.
+        </p>
       }
     >
       <FeatureCard
-        title="Compliance review"
-        description="Rejected DND rows, blocked outbound attempts, and consent gaps will all live under one reusable review surface."
-        detail="Risk control"
+        title="Compliance queue"
+        description="DND violations, consent issues, and outbound review tools will be added here later."
+        detail="Future module"
         tone="accent"
       />
       <FeatureCard
-        title="Operational analytics"
-        description="Bookings, escalations, failures, and cost-per-call can share one visual system so internal teams see the same truth fast."
-        detail="Platform visibility"
+        title="Tenant operations"
+        description="Support actions, organization status changes, and manual review tools will live in this app."
+        detail="Future module"
       />
       <FeatureCard
-        title="Abuse intervention"
-        description="The shared card system is ready for org suspension, manual review, and audit evidence screens without a redesign later."
-        detail="Internal tooling"
+        title="Billing oversight"
+        description="Internal payment and usage review surfaces will be added only after auth and org data are stable."
+        detail="Future module"
         tone="warm"
       />
     </StudioShell>
