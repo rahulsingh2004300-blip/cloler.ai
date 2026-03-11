@@ -1,5 +1,20 @@
 "use client";
 
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@cloler/ui";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
@@ -28,54 +43,59 @@ export function WorkspaceOverview() {
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl items-start px-6 py-16">
-      <section className="w-full space-y-6">
-        <div className="space-y-3">
-          <p className="text-sm text-slate-500">cloler.ai / dashboard</p>
-          <h1 className="text-3xl font-semibold tracking-tight">Backend foundation shell</h1>
-          <p className="text-sm text-slate-600">UI reset complete. Convex foundation remains connected.</p>
-        </div>
-
-        <div className="space-y-2 text-sm text-slate-700">
-          <p>Status: {overview ? overview.status : "loading"}</p>
-          <p>Workspace: {workspaceConfig.organizationSlug}</p>
-          <p>Viewer: {workspaceConfig.viewerName}</p>
-        </div>
-
-        <button
-          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-900"
-          onClick={handleSync}
-          type="button"
-        >
-          Sync workspace
-        </button>
-
-        {status ? <p className="text-sm text-slate-600">{status}</p> : null}
+      <div className="w-full space-y-6">
+        <Card>
+          <CardHeader>
+            <Badge className="w-fit" variant="secondary">
+              Dashboard
+            </Badge>
+            <CardTitle>Backend foundation shell</CardTitle>
+            <CardDescription>Convex connection only.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1 text-sm text-muted-foreground">
+              <p>Status: {overview ? overview.status : "loading"}</p>
+              <p>Workspace: {workspaceConfig.organizationSlug}</p>
+              <p>Viewer: {workspaceConfig.viewerName}</p>
+            </div>
+            <Button className="w-fit" onClick={handleSync} type="button">
+              Sync workspace
+            </Button>
+            {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
+          </CardContent>
+        </Card>
 
         {overview ? (
-          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-            <table className="min-w-full border-collapse text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left">
-                  <th className="px-4 py-3 font-medium">Metric</th>
-                  <th className="px-4 py-3 font-medium">Source</th>
-                  <th className="px-4 py-3 font-medium">Quantity</th>
-                  <th className="px-4 py-3 font-medium">Cost</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(overview.recentUsageEvents ?? []).map((event) => (
-                  <tr key={event.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-3">{event.metricKey}</td>
-                    <td className="px-4 py-3">{event.source}</td>
-                    <td className="px-4 py-3">{event.quantity}</td>
-                    <td className="px-4 py-3">{event.totalCostInr}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Usage</CardTitle>
+              <CardDescription>Seeded Convex data.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Metric</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Quantity</TableHead>
+                    <TableHead>Cost</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(overview.recentUsageEvents ?? []).map((event) => (
+                    <TableRow key={event.id}>
+                      <TableCell>{event.metricKey}</TableCell>
+                      <TableCell>{event.source}</TableCell>
+                      <TableCell>{event.quantity}</TableCell>
+                      <TableCell>{event.totalCostInr}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         ) : null}
-      </section>
+      </div>
     </main>
   );
 }

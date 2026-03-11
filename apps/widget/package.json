@@ -10,6 +10,7 @@
   "dependencies": {
     "@cloler/ui": "workspace:*",
     "next": "^16.1.6",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

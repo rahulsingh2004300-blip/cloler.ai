@@ -1,11 +1,20 @@
+import { Badge, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@cloler/ui";
+
 export default function HomePage() {
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-16">
-      <section className="space-y-3">
-        <p className="text-sm text-slate-500">cloler.ai / marketing</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Blank marketing shell</h1>
-        <p className="text-sm text-slate-600">UI reset complete. We will rebuild this fresh.</p>
-      </section>
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <Badge className="w-fit" variant="secondary">
+            Marketing
+          </Badge>
+          <CardTitle>Blank shell</CardTitle>
+          <CardDescription>No marketing UI yet.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Shared shadcn card from @cloler/ui.</p>
+        </CardContent>
+      </Card>
     </main>
   );
 }
