@@ -1,0 +1,8 @@
+{
+  "name": "@cloler/eslint-config",
+  "private": true,
+  "type": "module",
+  "files": [
+    "base.mjs"
+  ]
+}
