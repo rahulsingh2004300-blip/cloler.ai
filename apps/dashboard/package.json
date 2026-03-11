@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@cloler/ui": "workspace:*",
+    "convex": "^1.32.0",
     "next": "^16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"

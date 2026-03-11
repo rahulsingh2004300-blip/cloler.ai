@@ -10,8 +10,8 @@ export default [
       "**/dist/**",
       "**/coverage/**",
       "**/node_modules/**",
-      "pnpm-lock.yaml"
-    ]
+      "pnpm-lock.yaml",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -20,11 +20,11 @@ export default [
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.node
-      }
+        ...globals.node,
+      },
     },
     rules: {
-      "no-console": ["warn", { "allow": ["warn", "error"] }]
-    }
-  }
+      "no-console": ["warn", { allow: ["warn", "error"] }],
+    },
+  },
 ];

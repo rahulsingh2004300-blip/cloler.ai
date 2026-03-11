@@ -12,10 +12,15 @@
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "format": "prettier --check .",
-    "format:write": "prettier --write ."
+    "format:write": "prettier --write .",
+    "convex:dev": "convex dev",
+    "convex:codegen": "convex codegen",
+    "convex:dashboard": "convex dashboard",
+    "convex:deploy": "convex deploy"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "convex": "^1.32.0",
     "eslint": "^10.0.3",
     "globals": "^17.4.0",
     "prettier": "^3.8.1",
