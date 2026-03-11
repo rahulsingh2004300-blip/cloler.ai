@@ -1,19 +1,62 @@
 "use client";
 
 import {
+  Button,
+  DataTable,
   FeatureCard,
   MetricCard,
   SectionHeading,
   StudioShell,
+  type DataTableColumn,
 } from "@cloler/ui";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
 import { startTransition, useState } from "react";
+import { workspaceArgs, workspaceConfig } from "./workspace-config";
 
-const workspaceArgs = {
-  organizationSlug: "cloler-demo",
-  viewerEmail: "owner@cloler.ai",
+type RecentUsageRow = {
+  id: string;
+  eventType: string;
+  metricKey: string;
+  quantity: number;
+  totalCostInr: number;
+  source: string;
+  happenedAt: number;
 };
+
+const recentUsageColumns: DataTableColumn<RecentUsageRow>[] = [
+  {
+    key: "metric",
+    header: "Metric",
+    render: (event) => (
+      <div>
+        <p className="text-sm font-semibold text-slate-900">
+          {event.metricKey.replaceAll("_", " ")}
+        </p>
+        <p className="mt-1 text-sm text-slate-500">
+          {event.eventType} via {event.source}
+        </p>
+      </div>
+    ),
+  },
+  {
+    key: "happenedAt",
+    header: "When",
+    render: (event) => formatDateTime(event.happenedAt),
+  },
+  {
+    key: "quantity",
+    header: "Units",
+    align: "right",
+    render: (event) => event.quantity,
+  },
+  {
+    key: "cost",
+    header: "Cost",
+    align: "right",
+    render: (event) => formatCurrency(event.totalCostInr),
+  },
+];
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -43,8 +86,9 @@ export function WorkspaceOverview() {
     });
 
     void ensureDemoWorkspace({
-      ...workspaceArgs,
-      ownerName: "Rahul Kumar",
+      organizationSlug: workspaceConfig.organizationSlug,
+      ownerEmail: workspaceConfig.viewerEmail,
+      ownerName: workspaceConfig.viewerName,
     })
       .then((result) => {
         startTransition(() => {
@@ -115,7 +159,7 @@ export function WorkspaceOverview() {
             <SectionHeading
               eyebrow="Convex status"
               title="Waiting for the first backend response"
-              description="The Step 03 foundation keeps the UI stable even before seed data exists."
+              description={`The Step 03 foundation keeps the UI stable even before ${workspaceConfig.organizationSlug} seed data exists.`}
             />
           </div>
         }
@@ -214,14 +258,9 @@ export function WorkspaceOverview() {
               control-plane data.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={handleRefreshWorkspace}
-            disabled={isRefreshing}
-            className="rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
+          <Button onClick={handleRefreshWorkspace} disabled={isRefreshing}>
             {isRefreshing ? "Refreshing..." : "Re-seed demo workspace"}
-          </button>
+          </Button>
         </div>
         {feedback ? (
           <p className="mt-4 text-sm text-slate-500">{feedback}</p>
@@ -235,14 +274,11 @@ export function WorkspaceOverview() {
         title="The Convex project is ready, but this tenant has no records yet"
         description="Use the seed mutation from the frontend to create the first organization, users, usage events, and audit logs."
       />
-      <button
-        type="button"
-        onClick={handleRefreshWorkspace}
-        disabled={isRefreshing}
-        className="mt-6 rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isRefreshing ? "Initializing..." : "Initialize Convex workspace"}
-      </button>
+      <div className="mt-6 flex flex-wrap gap-3">
+        <Button onClick={handleRefreshWorkspace} disabled={isRefreshing}>
+          {isRefreshing ? "Initializing..." : "Initialize Convex workspace"}
+        </Button>
+      </div>
       {feedback ? (
         <p className="mt-4 text-sm text-slate-500">{feedback}</p>
       ) : null}
@@ -281,8 +317,9 @@ export function WorkspaceOverview() {
           </p>
         ) : (
           <p>
-            Convex is connected successfully. The next mutation creates the
-            first tenant records and immediately hydrates this UI.
+            Convex is connected successfully for {workspaceConfig.viewerName}.
+            The next mutation creates the first tenant records and immediately
+            hydrates this UI.
           </p>
         )
       }
@@ -329,27 +366,12 @@ export function WorkspaceOverview() {
             title="Live records from Convex"
             description="These rows come from the seeded usage events table and will later be fed by the Python telephony service."
           />
-          <div className="mt-6 space-y-3">
-            {overview.recentUsageEvents.map((event) => (
-              <div
-                key={event.id}
-                className="flex flex-col gap-2 rounded-[1.3rem] border border-[color:var(--cl-color-line)] bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">
-                    {event.metricKey.replaceAll("_", " ")}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-500">
-                    {event.eventType} via {event.source} on{" "}
-                    {formatDateTime(event.happenedAt)}
-                  </p>
-                </div>
-                <div className="text-sm text-slate-600 sm:text-right">
-                  <p>{event.quantity} units</p>
-                  <p>{formatCurrency(event.totalCostInr)}</p>
-                </div>
-              </div>
-            ))}
+          <div className="mt-6">
+            <DataTable
+              columns={recentUsageColumns}
+              rows={overview.recentUsageEvents}
+              emptyState="No usage events have been recorded yet."
+            />
           </div>
         </div>
       ) : (
