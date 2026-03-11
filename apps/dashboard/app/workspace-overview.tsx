@@ -3,8 +3,6 @@
 import {
   Button,
   DataTable,
-  FeatureCard,
-  MetricCard,
   SectionHeading,
   StudioShell,
   type DataTableColumn,
@@ -30,7 +28,7 @@ const recentUsageColumns: DataTableColumn<RecentUsageRow>[] = [
     header: "Metric",
     render: (event) => (
       <div>
-        <p className="text-sm font-semibold text-slate-900">
+        <p className="font-medium text-slate-900">
           {event.metricKey.replaceAll("_", " ")}
         </p>
         <p className="mt-1 text-sm text-slate-500">
@@ -40,12 +38,12 @@ const recentUsageColumns: DataTableColumn<RecentUsageRow>[] = [
     ),
   },
   {
-    key: "happenedAt",
+    key: "when",
     header: "When",
     render: (event) => formatDateTime(event.happenedAt),
   },
   {
-    key: "quantity",
+    key: "units",
     header: "Units",
     align: "right",
     render: (event) => event.quantity,
@@ -82,7 +80,7 @@ export function WorkspaceOverview() {
   const handleRefreshWorkspace = () => {
     startTransition(() => {
       setIsRefreshing(true);
-      setFeedback("Refreshing the seeded workspace in Convex...");
+      setFeedback("Refreshing workspace data...");
     });
 
     void ensureDemoWorkspace({
@@ -98,13 +96,12 @@ export function WorkspaceOverview() {
         });
       })
       .catch((error) => {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Convex workspace refresh failed.";
-
         startTransition(() => {
-          setFeedback(message);
+          setFeedback(
+            error instanceof Error
+              ? error.message
+              : "Workspace refresh failed.",
+          );
         });
       })
       .finally(() => {
@@ -118,21 +115,19 @@ export function WorkspaceOverview() {
     return (
       <StudioShell
         eyebrow="cloler.ai / dashboard"
-        title="Connecting the operator cockpit to Convex live data."
-        description="This workspace is waiting for the first live snapshot from Convex. Once the query resolves, we will show tenant metrics, audit flow, and telephony sync boundaries here."
-        pills={["Convex", "Live dashboard", "Tenant-safe"]}
+        title="Dashboard foundation"
+        description="This page is connected to Convex and waiting for the first live response. The layout stays intentionally minimal while we finish the base platform setup."
+        pills={["Convex", "Live query", "Step 3"]}
         actions={[
           {
-            href: "#workspace-status",
-            label: "Open workspace status",
-            caption:
-              "The dashboard will swap from placeholder UI to live query results.",
+            href: "#workspace",
+            label: "Workspace panel",
+            caption: "The dashboard will populate when the query resolves.",
           },
           {
-            href: "#sync-boundaries",
-            label: "Review sync boundaries",
-            caption:
-              "Convex stays the control plane while telephony runtime stays external.",
+            href: "#sync",
+            label: "Sync notes",
+            caption: "Telephony runtime stays outside this app for now.",
             variant: "secondary",
           },
         ]}
@@ -140,47 +135,55 @@ export function WorkspaceOverview() {
           {
             label: "Convex",
             value: "Connecting",
-            note: "Bootstrapping the first live subscription.",
+            note: "Waiting for the first subscription payload.",
             emphasis: true,
           },
           {
-            label: "Usage events",
-            value: "...",
-            note: "Waiting for seeded records.",
+            label: "Workspace",
+            value: workspaceConfig.organizationSlug,
+            note: "Default local workspace configuration.",
           },
           {
-            label: "Audit logs",
-            value: "...",
-            note: "Loading the control-plane trail.",
+            label: "Viewer",
+            value: workspaceConfig.viewerName,
+            note: workspaceConfig.viewerEmail,
           },
         ]}
         spotlight={
-          <div className="rounded-[2rem] border border-[color:var(--cl-color-line)] bg-white/80 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)] backdrop-blur">
-            <SectionHeading
-              eyebrow="Convex status"
-              title="Waiting for the first backend response"
-              description={`The Step 03 foundation keeps the UI stable even before ${workspaceConfig.organizationSlug} seed data exists.`}
-            />
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Status
+            </p>
+            <h2 className="text-xl font-semibold text-slate-950">
+              Waiting for Convex data
+            </h2>
+            <p className="text-sm leading-6 text-slate-600">
+              Once the query resolves, this page will show the workspace status,
+              usage rows, and sync boundary notes.
+            </p>
           </div>
         }
       >
-        <FeatureCard
-          title="Schema first"
-          description="Organizations, users, usage events, and audit logs are now the first durable control-plane tables for cloler.ai."
-          detail="Control plane"
-          tone="accent"
-        />
-        <FeatureCard
-          title="Telephony boundary"
-          description="LiveKit, Vobiz, and Sarvam runtime state stay out of the dashboard database until they become durable business events."
-          detail="Service contract"
-        />
-        <FeatureCard
-          title="Frontend wiring"
-          description="This page is already subscribed through Convex React, so the seeded workspace appears without a page refresh."
-          detail="Live query"
-          tone="warm"
-        />
+        <section
+          id="workspace"
+          className="rounded-xl border border-[color:var(--cl-color-line)] bg-white p-6 shadow-sm lg:col-span-2"
+        >
+          <SectionHeading
+            eyebrow="Workspace"
+            title="Loading live workspace data"
+            description="The dashboard is wired. Content will appear here as soon as the first response arrives from Convex."
+          />
+        </section>
+        <section
+          id="sync"
+          className="rounded-xl border border-[color:var(--cl-color-line)] bg-white p-6 shadow-sm"
+        >
+          <SectionHeading
+            eyebrow="Boundary"
+            title="Control plane only"
+            description="This app is for durable SaaS state, not real-time audio processing."
+          />
+        </section>
       </StudioShell>
     );
   }
@@ -190,239 +193,195 @@ export function WorkspaceOverview() {
   const metrics = isReady
     ? [
         {
-          label: "Call minutes",
-          value: `${overview.usageSummary.callMinutes} min`,
-          note: `Average live cost ${formatCurrency(overview.usageSummary.averageCostPerMinuteInr)} per minute.`,
+          label: "Convex",
+          value: "Connected",
+          note: overview.organization.slug,
           emphasis: true,
         },
         {
-          label: "Projected telephony",
-          value: formatCurrency(
-            overview.usageSummary.projectedMonthlyTelephonyInr,
-          ),
-          note: "Projection uses the seeded low-cost Bulbul v2 call path.",
+          label: "Members",
+          value: `${overview.counts.members}`,
+          note: `${overview.counts.auditLogs} audit records available.`,
         },
         {
-          label: "Workspace members",
-          value: `${overview.counts.members}`,
-          note: `${overview.counts.auditLogs} audit entries currently visible.`,
+          label: "Call minutes",
+          value: `${overview.usageSummary.callMinutes}`,
+          note: `Avg ${formatCurrency(overview.usageSummary.averageCostPerMinuteInr)} / min`,
         },
       ]
     : [
         {
-          label: "Workspace",
-          value: "Not seeded",
-          note: "Create the first tenant-safe records in Convex.",
+          label: "Convex",
+          value: "Connected",
+          note: "Workspace needs seed data.",
           emphasis: true,
         },
         {
-          label: "Call minutes",
-          value: "0",
-          note: "No usage events have been written yet.",
+          label: "Workspace",
+          value: workspaceConfig.organizationSlug,
+          note: "Ready to initialize.",
         },
         {
-          label: "Audit logs",
-          value: "0",
-          note: "Seed the workspace to create the initial trail.",
+          label: "Viewer",
+          value: workspaceConfig.viewerName,
+          note: workspaceConfig.viewerEmail,
         },
       ];
 
-  const spotlight = isReady ? (
-    <div className="rounded-[2rem] border border-[color:var(--cl-color-line)] bg-white/80 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)] backdrop-blur">
-      <SectionHeading
-        eyebrow="Workspace status"
-        title={`${overview.organization.name} is live in Convex`}
-        description={`Plan ${overview.organization.plan} with ${overview.organization.defaultVoiceTier} as the default voice tier. Last sync ${formatDateTime(overview.organization.updatedAt)}.`}
-      />
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <MetricCard
-          label="Telephony mode"
-          value={overview.organization.telephonyMode}
-          note="This stays tenant-facing while provider credentials remain platform-owned."
-        />
-        <MetricCard
-          label="Total visible spend"
-          value={formatCurrency(overview.usageSummary.totalSpendInr)}
-          note={`Billing contact ${overview.organization.billingEmail}.`}
-          emphasis
-        />
+  const spotlight = (
+    <div className="space-y-4">
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+          Workspace status
+        </p>
+        <h2 className="mt-2 text-xl font-semibold text-slate-950">
+          {isReady
+            ? overview.organization.name
+            : "Workspace data not initialized yet"}
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          {isReady
+            ? `Plan ${overview.organization.plan} with ${overview.organization.defaultVoiceTier} as the current default voice tier.`
+            : "Use the seed action once to create the initial organization, users, usage events, and audit records."}
+        </p>
       </div>
-      <div className="mt-6 rounded-[1.6rem] border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-card)] p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
-              Seed controls
-            </p>
-            <p className="mt-2 text-sm text-slate-600">
-              Re-run the Step 03 mutation any time to restore the demo
-              control-plane data.
-            </p>
-          </div>
-          <Button onClick={handleRefreshWorkspace} disabled={isRefreshing}>
-            {isRefreshing ? "Refreshing..." : "Re-seed demo workspace"}
-          </Button>
+      <div className="grid gap-3 text-sm text-slate-600">
+        <div className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 px-4 py-3">
+          <span className="font-medium text-slate-900">Viewer:</span>{" "}
+          {workspaceConfig.viewerName}
         </div>
-        {feedback ? (
-          <p className="mt-4 text-sm text-slate-500">{feedback}</p>
-        ) : null}
+        <div className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 px-4 py-3">
+          <span className="font-medium text-slate-900">Organization:</span>{" "}
+          {workspaceConfig.organizationSlug}
+        </div>
       </div>
-    </div>
-  ) : (
-    <div className="rounded-[2rem] border border-[color:var(--cl-color-line)] bg-white/80 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)] backdrop-blur">
-      <SectionHeading
-        eyebrow="Workspace bootstrap"
-        title="The Convex project is ready, but this tenant has no records yet"
-        description="Use the seed mutation from the frontend to create the first organization, users, usage events, and audit logs."
-      />
-      <div className="mt-6 flex flex-wrap gap-3">
-        <Button onClick={handleRefreshWorkspace} disabled={isRefreshing}>
-          {isRefreshing ? "Initializing..." : "Initialize Convex workspace"}
-        </Button>
-      </div>
-      {feedback ? (
-        <p className="mt-4 text-sm text-slate-500">{feedback}</p>
-      ) : null}
+      <Button onClick={handleRefreshWorkspace} disabled={isRefreshing}>
+        {isRefreshing
+          ? "Refreshing..."
+          : isReady
+            ? "Re-seed workspace"
+            : "Initialize workspace"}
+      </Button>
+      {feedback ? <p className="text-sm text-slate-500">{feedback}</p> : null}
     </div>
   );
 
   return (
     <StudioShell
       eyebrow="cloler.ai / dashboard"
-      title="A live Convex-backed control plane for telephony, voice, and billing decisions."
-      description="Step 03 turns the dashboard into a real backend surface: seeded tenant records, audit trails, low-cost telephony tracking, and an explicit contract with the future Python call worker."
-      pills={["Convex live", "Provider-owned infra", "DND-safe workflows"]}
+      title="Dashboard foundation"
+      description="This is the Step 3 control-plane shell. It shows that Convex is connected and the dashboard can read tenant-facing workspace data before auth and deeper product workflows are added."
+      pills={["Convex", "Minimal scaffold", "Ready for Step 4"]}
       actions={[
         {
-          href: "#workspace-status",
-          label: "Open workspace status",
-          caption:
-            "Review live metrics, billing visibility, and the current seed state.",
+          href: "#workspace",
+          label: "Workspace data",
+          caption: "Review the seeded usage rows and basic workspace state.",
         },
         {
-          href: "#sync-boundaries",
-          label: "Inspect sync contract",
+          href: "#sync",
+          label: "Sync boundaries",
           caption:
-            "See what Convex owns versus what stays inside the telephony runtime.",
+            "See what belongs in Convex and what stays in telephony services.",
           variant: "secondary",
         },
       ]}
       metrics={metrics}
       spotlight={spotlight}
       footnote={
-        isReady ? (
-          <p>
-            Viewer {overview.viewer.name} is reading tenant-safe dashboard data
-            while provider secrets remain outside customer configuration
-            surfaces.
-          </p>
-        ) : (
-          <p>
-            Convex is connected successfully for {workspaceConfig.viewerName}.
-            The next mutation creates the first tenant records and immediately
-            hydrates this UI.
-          </p>
-        )
+        <p>
+          Keep this screen simple until authentication, organizations, and real
+          workflows are added in the next steps.
+        </p>
       }
     >
-      <FeatureCard
-        title="Usage and cost foundation"
-        description={
-          isReady
-            ? `Current seeded telephony spend is ${formatCurrency(overview.usageSummary.telephonySpendInr)} for ${overview.usageSummary.callMinutes} minutes, which keeps the default path close to the target low-cost stack.`
-            : "Seed data will create the first telephony usage snapshot so we can validate the cost model directly inside the product."
-        }
-        detail="Finance visibility"
-        tone="accent"
-      />
-      <FeatureCard
-        title="Recent operator trail"
-        description={
-          isReady
-            ? overview.auditFeed
-                .slice(0, 2)
-                .map(
-                  (entry) =>
-                    `${entry.action.replaceAll("_", " ")} on ${formatDateTime(entry.createdAt)}`,
-                )
-                .join(". ")
-            : "Audit logs appear here as soon as the demo workspace is seeded."
-        }
-        detail="Audit visibility"
-      />
-      <FeatureCard
-        title="Telephony sync boundary"
-        description={`Convex owns ${overview.syncBoundaries.convexOwned[0]}. The worker owns ${overview.syncBoundaries.telephonyOwned[0]}.`}
-        detail="Integration contract"
-        tone="warm"
-      />
-
-      {isReady ? (
-        <div
-          id="workspace-status"
-          className="md:col-span-2 rounded-[1.8rem] border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-card)] p-6"
-        >
-          <SectionHeading
-            eyebrow="Recent usage"
-            title="Live records from Convex"
-            description="These rows come from the seeded usage events table and will later be fed by the Python telephony service."
-          />
-          <div className="mt-6">
+      <section
+        id="workspace"
+        className="rounded-xl border border-[color:var(--cl-color-line)] bg-white p-6 shadow-sm lg:col-span-2"
+      >
+        <SectionHeading
+          eyebrow="Workspace data"
+          title={isReady ? "Recent usage events" : "Workspace is ready to seed"}
+          description={
+            isReady
+              ? "These records come from Convex and confirm that the dashboard wiring is working."
+              : "Use the button above once to generate the first demo workspace records."
+          }
+        />
+        <div className="mt-5">
+          {isReady ? (
             <DataTable
               columns={recentUsageColumns}
               rows={overview.recentUsageEvents}
-              emptyState="No usage events have been recorded yet."
+              emptyState="No usage events available."
             />
-          </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-[color:var(--cl-color-line)] px-4 py-8 text-sm text-slate-500">
+              No usage rows are available yet.
+            </div>
+          )}
         </div>
-      ) : (
-        <div
-          id="workspace-status"
-          className="md:col-span-2 rounded-[1.8rem] border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-card)] p-6"
-        >
-          <SectionHeading
-            eyebrow="Seed preview"
-            title="What the first mutation will create"
-            description="One organization, two users, usage events for telephony and DND-safe imports, plus an initial audit trail."
-          />
-        </div>
-      )}
+      </section>
 
-      <div
-        id="sync-boundaries"
-        className="rounded-[1.8rem] border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-card)] p-6"
+      <section className="rounded-xl border border-[color:var(--cl-color-line)] bg-white p-6 shadow-sm">
+        <SectionHeading
+          eyebrow="Audit"
+          title="Recent activity"
+          description="A small audit list is enough for the current foundation step."
+        />
+        <div className="mt-5 space-y-3">
+          {isReady ? (
+            overview.auditFeed.map((entry) => (
+              <div
+                key={entry.id}
+                className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 px-4 py-3"
+              >
+                <p className="text-sm font-medium text-slate-900">
+                  {entry.action.replaceAll("_", " ")}
+                </p>
+                <p className="mt-1 text-sm text-slate-500">{entry.summary}</p>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-lg border border-dashed border-[color:var(--cl-color-line)] px-4 py-8 text-sm text-slate-500">
+              Audit entries will appear after the workspace is seeded.
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section
+        id="sync"
+        className="rounded-xl border border-[color:var(--cl-color-line)] bg-white p-6 shadow-sm lg:col-span-3"
       >
         <SectionHeading
           eyebrow="Sync boundaries"
-          title="Convex and the telephony worker have separate responsibilities"
-          description="This contract keeps the SaaS backend durable and queryable without turning it into a real-time media runtime."
+          title="Clear service ownership"
+          description="The dashboard owns durable SaaS data. Real-time media and telephony runtime stay outside this app."
         />
-        <div className="mt-6 space-y-4 text-sm text-slate-600">
-          <div>
-            <p className="font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Convex owns
-            </p>
-            <p className="mt-2">
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+          <div className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 p-4">
+            <p className="text-sm font-medium text-slate-900">Convex owns</p>
+            <p className="mt-2 text-sm text-slate-600">
               {overview.syncBoundaries.convexOwned.join(". ")}.
             </p>
           </div>
-          <div>
-            <p className="font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Telephony worker owns
-            </p>
-            <p className="mt-2">
+          <div className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 p-4">
+            <p className="text-sm font-medium text-slate-900">Telephony owns</p>
+            <p className="mt-2 text-sm text-slate-600">
               {overview.syncBoundaries.telephonyOwned.join(". ")}.
             </p>
           </div>
-          <div>
-            <p className="font-semibold uppercase tracking-[0.2em] text-slate-500">
+          <div className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 p-4">
+            <p className="text-sm font-medium text-slate-900">
               Sync into Convex
             </p>
-            <p className="mt-2">
+            <p className="mt-2 text-sm text-slate-600">
               {overview.syncBoundaries.syncIntoConvex.join(". ")}.
             </p>
           </div>
         </div>
-      </div>
+      </section>
     </StudioShell>
   );
 }
