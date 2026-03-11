@@ -1,0 +1,13 @@
+[project]
+name = "cloler-telephony-agent"
+version = "0.1.0"
+description = "InboundAIVoice-inspired telephony worker for cloler.ai"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn>=0.35.0"
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
