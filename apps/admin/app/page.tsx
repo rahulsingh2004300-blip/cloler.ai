@@ -1,40 +1,47 @@
+import { Badge } from "@cloler/ui/components/badge";
+import { Button } from "@cloler/ui/components/button";
 import {
-  Badge,
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-  Separator,
-} from "@cloler/ui";
+} from "@cloler/ui/components/card";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-16">
-      <Card className="w-full max-w-2xl shadow-sm">
-        <CardHeader className="space-y-3">
-          <Badge className="w-fit" variant="secondary">
-            Admin
-          </Badge>
-          <div className="space-y-1">
-            <CardTitle>Blank shell</CardTitle>
-            <CardDescription>No admin workflows yet.</CardDescription>
-          </div>
-        </CardHeader>
-        <Separator />
-        <CardContent className="space-y-3">
-          <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-            Internal admin surface is reserved for later steps.
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button disabled type="button" variant="outline">
-            No actions yet
-          </Button>
-        </CardFooter>
-      </Card>
+    <main className="min-h-screen bg-muted/40 py-16">
+      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6">
+        <Card>
+          <CardHeader className="gap-3">
+            <Badge className="w-fit" variant="secondary">
+              Admin
+            </Badge>
+            <div className="space-y-1">
+              <CardTitle>Admin shell</CardTitle>
+              <CardDescription>Shared shadcn surface only.</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <Card className="shadow-none">
+              <CardHeader>
+                <CardTitle className="text-base">Review queue</CardTitle>
+                <CardDescription>Empty placeholder</CardDescription>
+              </CardHeader>
+            </Card>
+            <Card className="shadow-none">
+              <CardHeader>
+                <CardTitle className="text-base">Platform health</CardTitle>
+                <CardDescription>Empty placeholder</CardDescription>
+              </CardHeader>
+            </Card>
+          </CardContent>
+          <CardFooter className="justify-end">
+            <Button type="button">Primary action</Button>
+          </CardFooter>
+        </Card>
+      </div>
     </main>
   );
 }

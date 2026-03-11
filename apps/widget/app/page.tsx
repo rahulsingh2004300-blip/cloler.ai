@@ -1,48 +1,53 @@
+import { Badge } from "@cloler/ui/components/badge";
+import { Button } from "@cloler/ui/components/button";
 import {
-  Badge,
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-  Input,
-  Label,
-  Separator,
-  Textarea,
-} from "@cloler/ui";
+} from "@cloler/ui/components/card";
+import { Input } from "@cloler/ui/components/input";
+import { Label } from "@cloler/ui/components/label";
+import { Textarea } from "@cloler/ui/components/textarea";
 
 export default function HomePage() {
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-16">
-      <Card className="w-full max-w-2xl shadow-sm">
-        <CardHeader className="space-y-3">
-          <Badge className="w-fit" variant="secondary">
-            Widget
-          </Badge>
-          <div className="space-y-1">
-            <CardTitle>Blank shell</CardTitle>
-            <CardDescription>Shared shadcn form controls only.</CardDescription>
-          </div>
-        </CardHeader>
-        <Separator />
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="widget-name">Name</Label>
-            <Input id="widget-name" placeholder="Enter name" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="widget-message">Message</Label>
-            <Textarea id="widget-message" placeholder="Enter message" />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-fit" type="button">
-            Submit
-          </Button>
-        </CardFooter>
-      </Card>
+    <main className="min-h-screen bg-muted/40 py-16">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-6">
+        <Card>
+          <CardHeader className="gap-3">
+            <Badge className="w-fit" variant="secondary">
+              Widget
+            </Badge>
+            <div className="space-y-1">
+              <CardTitle>Widget shell</CardTitle>
+              <CardDescription>Fresh shared shadcn form controls only.</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="widget-name">Name</Label>
+              <Input id="widget-name" placeholder="Enter name" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="widget-phone">Phone</Label>
+              <Input id="widget-phone" placeholder="Enter phone number" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="widget-message">Message</Label>
+              <Textarea id="widget-message" placeholder="Enter message" />
+            </div>
+          </CardContent>
+          <CardFooter className="justify-end gap-2">
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+            <Button type="button">Submit</Button>
+          </CardFooter>
+        </Card>
+      </div>
     </main>
   );
 }
