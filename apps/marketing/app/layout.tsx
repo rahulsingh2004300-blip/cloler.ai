@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Marketing surface | cloler.ai",
-  description: "Public-facing site for cloler.ai with room for positioning, pricing, and product education.",
+  description:
+    "Public-facing site for cloler.ai with room for positioning, pricing, and product education.",
 };
 
 export default function RootLayout({

@@ -3,7 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Widget preview | cloler.ai",
-  description: "Embeddable experience for inbound support conversations and voice sessions.",
+  description:
+    "Embeddable experience for inbound support conversations and voice sessions.",
 };
 
 export default function RootLayout({

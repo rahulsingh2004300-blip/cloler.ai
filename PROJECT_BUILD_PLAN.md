@@ -10,6 +10,7 @@
   - voice cloning: [resonance](https://github.com/code-with-antonio/resonance)
 
 ## Goal
+
 Build a multi-tenant SaaS that lets organizations:
 
 - clone voices from uploaded recordings,
@@ -806,10 +807,3 @@ The PDF still adds important scope beyond the repo-inspired build notes:
 ## Recommended Next Build Step
 
 Start with Step 01 immediately and keep telephony and voice cloning as separate service tracks from day one. That separation will help us clone the two reference repos cleanly without forcing the whole SaaS app into a single backend style too early.
-
-
-
-
-
-
-
