@@ -9,13 +9,11 @@ export function TextArea({ label, hint, className, ...props }: TextAreaProps) {
   return (
     <label className="grid gap-2">
       {label ? (
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-          {label}
-        </span>
+        <span className="text-sm font-medium text-slate-700">{label}</span>
       ) : null}
       <textarea
         className={[
-          "min-h-28 rounded-[1rem] border border-[color:var(--cl-color-line)] bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-[color:var(--app-accent-soft)]",
+          "min-h-28 rounded-md border border-[color:var(--cl-color-line)] bg-white px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200",
           className ?? "",
         ].join(" ")}
         {...props}

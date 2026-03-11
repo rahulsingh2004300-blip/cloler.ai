@@ -2,18 +2,7 @@
 @import "@cloler/ui/styles.css";
 
 :root {
-  --app-accent: #b45309;
-  --app-accent-soft: rgba(180, 83, 9, 0.2);
-  --app-background:
-    radial-gradient(
-      circle at top left,
-      rgba(245, 158, 11, 0.2),
-      transparent 28%
-    ),
-    radial-gradient(
-      circle at 82% 10%,
-      rgba(244, 63, 94, 0.12),
-      transparent 16%
-    ),
-    linear-gradient(180deg, #fffaf5 0%, #fff7ed 100%);
+  --app-accent: #334155;
+  --app-accent-soft: rgba(51, 65, 85, 0.08);
+  --app-background: #fafaf9;
 }

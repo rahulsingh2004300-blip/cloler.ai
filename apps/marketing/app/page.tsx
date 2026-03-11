@@ -1,40 +1,35 @@
-import {
-  FeatureCard,
-  MetricCard,
-  SectionHeading,
-  StudioShell,
-} from "@cloler/ui";
+import { FeatureCard, SectionHeading, StudioShell } from "@cloler/ui";
 
 const actions = [
   {
-    href: "#positioning",
-    label: "Shape the category",
-    caption: "Messaging for Indian voice AI with owned economics.",
+    href: "#overview",
+    label: "Project overview",
+    caption: "See what is included in Steps 1 to 3.",
   },
   {
-    href: "#economics",
-    label: "Show the unit economics",
-    caption: "Make the Rs 2/min target visible from day one.",
+    href: "#readiness",
+    label: "Foundation status",
+    caption: "Shared UI and app shells are ready for Step 4.",
     variant: "secondary" as const,
   },
 ];
 
 const metrics = [
   {
-    label: "Reference repos",
-    value: "2",
-    note: "InboundAIVoice plus resonance anchor the build direction.",
-  },
-  {
-    label: "Delivery surfaces",
-    value: "4",
-    note: "Marketing, dashboard, admin, and widget all share one system.",
+    label: "Stage",
+    value: "Step 1-3",
+    note: "Foundation, shared UI, and Convex setup only.",
     emphasis: true,
   },
   {
-    label: "Target call cost",
-    value: "~Rs 2/min",
-    note: "Default path assumes Vobiz + Sarvam Bulbul v2 + Groq.",
+    label: "Apps",
+    value: "4",
+    note: "Marketing, dashboard, admin, and widget are running locally.",
+  },
+  {
+    label: "Next",
+    value: "Step 4",
+    note: "Authentication and organization isolation.",
   },
 ];
 
@@ -42,61 +37,44 @@ export default function HomePage() {
   return (
     <StudioShell
       eyebrow="cloler.ai / marketing"
-      title="Voice AI infrastructure with owned margins, not rented margins."
-      description="The public surface sets up cloler.ai as the low-cost Indian voice AI stack for agencies, founders, and operators who want custom voices, compliant bulk calling, and full control over deployment economics."
-      pills={[
-        "InboundAIVoice-inspired",
-        "Resonance-inspired",
-        "DND-safe outbound",
-      ]}
+      title="Clean project scaffold for cloler.ai"
+      description="This page is intentionally minimal right now. Steps 1 to 3 are only about repo setup, shared UI, and backend foundation, so this surface should stay simple until real marketing content is designed later."
+      pills={["Monorepo", "Shared UI", "Convex foundation"]}
       actions={actions}
       metrics={metrics}
-      footnote={
-        <p>
-          Step 02 turns the placeholder workspace into a coherent brand system
-          that we can extend across every app without redoing the visual
-          language later.
-        </p>
-      }
       spotlight={
-        <div className="rounded-[2rem] border border-[color:var(--cl-color-line)] bg-white/80 p-6 shadow-[0_24px_80px_-48px_rgba(15,23,42,0.35)] backdrop-blur">
+        <div className="space-y-4" id="overview">
           <SectionHeading
-            eyebrow="Positioning"
-            title="Why this stack is cheaper"
-            description="The operator story should always connect product UX to owned infrastructure: Vobiz for Indian telephony, Sarvam for speech, Groq for low-cost reasoning, and optional premium voice tiers only when needed."
+            eyebrow="Current scope"
+            title="Only the foundation is built so far"
+            description="No pricing, case studies, or full landing-page copy yet. The goal here is a professional shell that proves the apps are wired correctly."
           />
-          <div className="mt-6 grid gap-3">
-            <MetricCard
-              label="Stock voice path"
-              value="Bulbul v2"
-              note="Default tier tuned for cost discipline."
-              emphasis
-            />
-            <MetricCard
-              label="Premium tiers"
-              value="Bulbul v3 + cloned voices"
-              note="Sold as upgrades, not defaults."
-            />
+          <div className="rounded-xl border border-[color:var(--cl-color-line)] bg-slate-50 p-4 text-sm text-slate-600">
+            Monorepo setup, shared components, and Convex wiring are ready.
+            Product content and conversion-focused marketing come later.
           </div>
         </div>
       }
+      footnote={
+        <p>Keep this app simple until the actual website content is planned.</p>
+      }
     >
       <FeatureCard
-        title="Clear product narrative"
-        description="The site can explain the split between low-cost stock calling and premium cloned-voice calling without confusing buyers."
-        detail="Category education"
+        title="Monorepo foundation"
+        description="Apps, packages, scripts, and repo standards are now in place and ready for feature work."
+        detail="Step 1"
         tone="accent"
       />
       <FeatureCard
-        title="Built-in compliance message"
-        description="Bulk upload workflows, DND handling, consent, and audit posture become core selling points instead of afterthoughts."
-        detail="Trust layer"
-        tone="warm"
+        title="Shared UI foundation"
+        description="The common layout, buttons, inputs, and cards are reusable across all app surfaces."
+        detail="Step 2"
       />
       <FeatureCard
-        title="Conversion-ready foundation"
-        description="We now have a reusable marketing shell for pricing, demos, FAQs, and comparison pages once those flows are built."
-        detail="Go-to-market surface"
+        title="Backend connection"
+        description="Convex is connected so the dashboard can move into auth and tenant-aware flows next."
+        detail="Step 3"
+        tone="warm"
       />
     </StudioShell>
   );

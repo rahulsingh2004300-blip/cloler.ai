@@ -19,7 +19,7 @@ export function DataTable<Row>({
   emptyState = "No rows available.",
 }: DataTableProps<Row>) {
   return (
-    <div className="overflow-hidden rounded-[1.4rem] border border-[color:var(--cl-color-line)] bg-white">
+    <div className="overflow-hidden rounded-xl border border-[color:var(--cl-color-line)] bg-white">
       <table className="min-w-full border-collapse text-left text-sm">
         <thead className="bg-slate-50">
           <tr>
