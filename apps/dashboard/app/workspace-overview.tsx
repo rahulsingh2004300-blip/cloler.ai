@@ -37,6 +37,7 @@ export function WorkspaceOverview() {
   const organizationSlug = orgSlug ?? undefined;
   const viewerEmail =
     user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
+  const viewerName = user?.fullName ?? user?.username ?? undefined;
 
   const overviewArgs:
     | "skip"
@@ -58,6 +59,8 @@ export function WorkspaceOverview() {
       await ensureWorkspaceForViewer({
         organizationSlug,
         organizationName: organization?.name,
+        viewerEmail,
+        viewerName,
       });
       setStatus("Workspace ready.");
     } catch (error) {

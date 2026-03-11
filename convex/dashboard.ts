@@ -140,6 +140,8 @@ export const ensureWorkspaceForViewer = mutation({
   args: {
     organizationSlug: v.optional(v.string()),
     organizationName: v.optional(v.string()),
+    viewerEmail: v.optional(v.string()),
+    viewerName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -150,14 +152,19 @@ export const ensureWorkspaceForViewer = mutation({
 
     const now = Date.now();
     const clerkUserId = identity.subject;
-    const viewerEmail = normalizeEmail(identity.email);
+    const fallbackEmail = normalizeEmail(args.viewerEmail);
 
-    if (!clerkUserId || !viewerEmail) {
-      throw new Error("Authenticated user identity is incomplete.");
+    if (!clerkUserId) {
+      throw new Error("Authenticated user id is missing.");
     }
+    const viewerEmail =
+      normalizeEmail(identity.email) ?? fallbackEmail ?? `${clerkUserId}@clerk.local`;
 
     const viewerName =
-      normalizeName(identity.name) ?? viewerEmail.split("@")[0] ?? "Operator";
+      normalizeName(identity.name) ??
+      normalizeName(args.viewerName) ??
+      viewerEmail.split("@")[0] ??
+      "Operator";
 
     const {
       clerkOrganizationId,
