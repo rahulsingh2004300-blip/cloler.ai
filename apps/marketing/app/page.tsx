@@ -14,7 +14,7 @@ const actions = [
   {
     href: "#economics",
     label: "Show the unit economics",
-    caption: "Make the ₹2/min target visible from day one.",
+    caption: "Make the Rs 2/min target visible from day one.",
     variant: "secondary" as const,
   },
 ];
@@ -33,7 +33,7 @@ const metrics = [
   },
   {
     label: "Target call cost",
-    value: "~₹2/min",
+    value: "~Rs 2/min",
     note: "Default path assumes Vobiz + Sarvam Bulbul v2 + Groq.",
   },
 ];
