@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { internalMutation } from "./_generated/server";
 import {
   DEFAULT_ORGANIZATION_SLUG,
   DEFAULT_VIEWER_EMAIL,
@@ -7,7 +7,7 @@ import {
   getOrganizationBySlug,
 } from "./lib/auth";
 
-export const ensureDemoWorkspace = mutation({
+export const ensureDemoWorkspace = internalMutation({
   args: {
     organizationSlug: v.optional(v.string()),
     ownerEmail: v.optional(v.string()),
@@ -254,3 +254,4 @@ export const ensureDemoWorkspace = mutation({
     };
   },
 });
+

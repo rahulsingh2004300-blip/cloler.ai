@@ -15,61 +15,133 @@ import {
   TableHeader,
   TableRow,
 } from "@cloler/ui";
+import {
+  OrganizationSwitcher,
+  UserButton,
+  useAuth,
+  useOrganization,
+  useUser,
+} from "@clerk/nextjs";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
+import Link from "next/link";
 import { useState } from "react";
-import { workspaceArgs, workspaceConfig } from "./workspace-config";
 
 export function WorkspaceOverview() {
-  const overview = useQuery(api.dashboard.getWorkspaceOverview, workspaceArgs);
-  const ensureDemoWorkspace = useMutation(api.seed.ensureDemoWorkspace);
+  const { isLoaded: authLoaded, orgId, orgSlug } = useAuth();
+  const { isLoaded: userLoaded, user } = useUser();
+  const { organization } = useOrganization();
+  const ensureWorkspaceForViewer = useMutation(api.dashboard.ensureWorkspaceForViewer);
   const [status, setStatus] = useState<string>("");
 
-  const handleSync = async () => {
-    setStatus("Syncing...");
+  const organizationSlug = orgSlug ?? undefined;
+  const viewerEmail =
+    user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
+
+  const overviewArgs:
+    | "skip"
+    | {
+        organizationSlug?: string;
+      } = authLoaded && userLoaded && orgId ? { organizationSlug } : "skip";
+
+  const overview = useQuery(api.dashboard.getWorkspaceOverview, overviewArgs);
+
+  const handleWorkspaceSetup = async () => {
+    if (!orgId) {
+      setStatus("Select an organization before continuing.");
+      return;
+    }
+
+    setStatus("Setting up workspace...");
 
     try {
-      await ensureDemoWorkspace({
-        organizationSlug: workspaceConfig.organizationSlug,
-        ownerEmail: workspaceConfig.viewerEmail,
-        ownerName: workspaceConfig.viewerName,
+      await ensureWorkspaceForViewer({
+        organizationSlug,
+        organizationName: organization?.name,
       });
-
-      setStatus("Workspace synced.");
+      setStatus("Workspace ready.");
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Sync failed.");
+      setStatus(error instanceof Error ? error.message : "Setup failed.");
     }
   };
+
+  if (!authLoaded || !userLoaded) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-16">
+        <Card className="w-full">
+          <CardHeader>
+            <CardTitle>Loading workspace...</CardTitle>
+            <CardDescription>Checking your authentication and organization context.</CardDescription>
+          </CardHeader>
+        </Card>
+      </main>
+    );
+  }
+
+  if (!orgId) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-5xl items-center px-6 py-16">
+        <Card className="w-full max-w-2xl">
+          <CardHeader>
+            <CardTitle>Organization required</CardTitle>
+            <CardDescription>Select or create an organization to continue.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild type="button">
+              <Link href="/org-selection">Open organization setup</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-5xl items-start px-6 py-16">
       <div className="w-full space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <p className="text-sm text-muted-foreground">cloler.ai / dashboard</p>
+            <h1 className="text-2xl font-semibold tracking-tight">Authenticated workspace</h1>
+          </div>
+          <div className="flex items-center gap-3">
+            <OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/" afterLeaveOrganizationUrl="/org-selection" />
+            <UserButton />
+          </div>
+        </div>
+
         <Card>
           <CardHeader>
             <Badge className="w-fit" variant="secondary">
-              Dashboard
+              Step 4
             </Badge>
-            <CardTitle>Backend foundation shell</CardTitle>
-            <CardDescription>Convex connection only.</CardDescription>
+            <CardTitle>Tenant-safe auth foundation</CardTitle>
+            <CardDescription>
+              {overview?.status === "ready"
+                ? "Your organization workspace is connected."
+                : "Finish workspace onboarding for this organization."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1 text-sm text-muted-foreground">
-              <p>Status: {overview ? overview.status : "loading"}</p>
-              <p>Workspace: {workspaceConfig.organizationSlug}</p>
-              <p>Viewer: {workspaceConfig.viewerName}</p>
+              <p>Signed-in user: {user?.fullName ?? user?.username ?? viewerEmail ?? "Unknown"}</p>
+              <p>Organization: {organization?.name ?? organizationSlug ?? orgId}</p>
+              <p>Status: {overview?.status ?? "loading"}</p>
             </div>
-            <Button className="w-fit" onClick={handleSync} type="button">
-              Sync workspace
-            </Button>
+            {overview?.status !== "ready" ? (
+              <Button className="w-fit" onClick={handleWorkspaceSetup} type="button">
+                Initialize organization workspace
+              </Button>
+            ) : null}
             {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
           </CardContent>
         </Card>
 
-        {overview ? (
+        {overview?.status === "ready" ? (
           <Card>
             <CardHeader>
-              <CardTitle>Usage</CardTitle>
-              <CardDescription>Seeded Convex data.</CardDescription>
+              <CardTitle>Usage snapshot</CardTitle>
+              <CardDescription>Organization-scoped Convex records.</CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
@@ -82,7 +154,7 @@ export function WorkspaceOverview() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(overview.recentUsageEvents ?? []).map((event) => (
+                  {overview.recentUsageEvents.map((event) => (
                     <TableRow key={event.id}>
                       <TableCell>{event.metricKey}</TableCell>
                       <TableCell>{event.source}</TableCell>
@@ -99,3 +171,4 @@ export function WorkspaceOverview() {
     </main>
   );
 }
+

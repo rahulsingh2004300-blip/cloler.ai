@@ -10,6 +10,7 @@
 
 import type * as dashboard from "../dashboard.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_organizationQueries from "../lib/organizationQueries.js";
 import type * as lib_syncBoundaries from "../lib/syncBoundaries.js";
 import type * as seed from "../seed.js";
 
@@ -22,6 +23,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   "lib/auth": typeof lib_auth;
+  "lib/organizationQueries": typeof lib_organizationQueries;
   "lib/syncBoundaries": typeof lib_syncBoundaries;
   seed: typeof seed;
 }>;

@@ -1,6 +1,11 @@
 import { v } from "convex/values";
-import { query } from "./_generated/server";
-import { findViewerContext, resolveViewerInput } from "./lib/auth";
+import { mutation, query } from "./_generated/server";
+import {
+  findAuthenticatedViewerContext,
+  getOrganizationByClerkId,
+  getOrganizationBySlug,
+  resolveIdentityOrganization,
+} from "./lib/auth";
 import {
   listOrganizationMembers,
   listRecentAuditLogs,
@@ -8,23 +13,50 @@ import {
 } from "./lib/organizationQueries";
 import { TELEPHONY_SYNC_BOUNDARIES } from "./lib/syncBoundaries";
 
+function normalizeSlug(value?: string) {
+  const trimmed = value?.trim().toLowerCase();
+  return trimmed ? trimmed : undefined;
+}
+
+function normalizeName(value?: string | null) {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function normalizeEmail(value?: string | null) {
+  const trimmed = value?.trim().toLowerCase();
+  return trimmed ? trimmed : undefined;
+}
+
+function fallbackSlugFromUser(clerkUserId: string) {
+  const suffix = clerkUserId.slice(-6).toLowerCase();
+  return `org-${suffix}`;
+}
+
 export const getWorkspaceOverview = query({
   args: {
     organizationSlug: v.optional(v.string()),
-    viewerEmail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { organizationSlug, viewerEmail } = resolveViewerInput(args);
-    const viewerContext = await findViewerContext(ctx.db, {
-      organizationSlug,
-      viewerEmail,
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      return {
+        status: "unauthorized" as const,
+        syncBoundaries: TELEPHONY_SYNC_BOUNDARIES,
+      };
+    }
+
+    const viewerContext = await findAuthenticatedViewerContext(ctx.db, identity, {
+      organizationSlug: args.organizationSlug,
     });
 
     if (!viewerContext) {
+      const { organizationSlug } = resolveIdentityOrganization(identity);
+
       return {
-        status: "needs_seed" as const,
-        organizationSlug,
-        viewerEmail,
+        status: "needs_onboarding" as const,
+        organizationSlug: organizationSlug ?? null,
         syncBoundaries: TELEPHONY_SYNC_BOUNDARIES,
       };
     }
@@ -100,6 +132,167 @@ export const getWorkspaceOverview = query({
         createdAt: entry.createdAt,
       })),
       syncBoundaries: TELEPHONY_SYNC_BOUNDARIES,
+    };
+  },
+});
+
+export const ensureWorkspaceForViewer = mutation({
+  args: {
+    organizationSlug: v.optional(v.string()),
+    organizationName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+
+    if (!identity) {
+      throw new Error("Authentication required.");
+    }
+
+    const now = Date.now();
+    const clerkUserId = identity.subject;
+    const viewerEmail = normalizeEmail(identity.email);
+
+    if (!clerkUserId || !viewerEmail) {
+      throw new Error("Authenticated user identity is incomplete.");
+    }
+
+    const viewerName =
+      normalizeName(identity.name) ?? viewerEmail.split("@")[0] ?? "Operator";
+
+    const {
+      clerkOrganizationId,
+      organizationSlug: organizationSlugFromIdentity,
+    } = resolveIdentityOrganization(identity);
+
+    const requestedSlug =
+      normalizeSlug(args.organizationSlug) ?? organizationSlugFromIdentity;
+
+    if (!clerkOrganizationId && !requestedSlug) {
+      throw new Error("Active organization is required.");
+    }
+
+    let organization = clerkOrganizationId
+      ? await getOrganizationByClerkId(ctx.db, clerkOrganizationId)
+      : null;
+
+    if (!organization && requestedSlug) {
+      organization = await getOrganizationBySlug(ctx.db, requestedSlug);
+    }
+
+    const safeSlug = requestedSlug ?? fallbackSlugFromUser(clerkUserId);
+    const safeName =
+      normalizeName(args.organizationName) ?? "cloler.ai Workspace";
+
+    if (!organization) {
+      const organizationId = await ctx.db.insert("organizations", {
+        name: safeName,
+        slug: safeSlug,
+        clerkOrganizationId,
+        status: "active",
+        plan: "starter",
+        billingEmail: viewerEmail,
+        defaultVoiceTier: "bulbul_v2",
+        telephonyMode: "hybrid",
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      organization = await ctx.db.get(organizationId);
+    } else {
+      await ctx.db.patch(organization._id, {
+        clerkOrganizationId:
+          organization.clerkOrganizationId ?? clerkOrganizationId,
+        name: organization.name || safeName,
+        billingEmail: organization.billingEmail ?? viewerEmail,
+        updatedAt: now,
+      });
+
+      organization = {
+        ...organization,
+        clerkOrganizationId: organization.clerkOrganizationId ?? clerkOrganizationId,
+        name: organization.name || safeName,
+        billingEmail: organization.billingEmail ?? viewerEmail,
+        updatedAt: now,
+      };
+    }
+
+    if (!organization) {
+      throw new Error("Failed to initialize organization workspace.");
+    }
+
+    const existingByClerkId = await ctx.db
+      .query("users")
+      .withIndex("by_clerk_user_id", (q) => q.eq("clerkUserId", clerkUserId))
+      .unique();
+
+    if (
+      existingByClerkId &&
+      existingByClerkId.organizationId !== organization._id
+    ) {
+      throw new Error(
+        "This user is linked to a different organization in Convex.",
+      );
+    }
+
+    if (!existingByClerkId) {
+      await ctx.db.insert("users", {
+        organizationId: organization._id,
+        clerkUserId,
+        email: viewerEmail,
+        name: viewerName,
+        role: "owner",
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+      });
+    } else {
+      await ctx.db.patch(existingByClerkId._id, {
+        email: viewerEmail,
+        name: viewerName,
+        status: "active",
+        updatedAt: now,
+      });
+    }
+
+    const usageExists = await ctx.db
+      .query("usageEvents")
+      .withIndex("by_organization_and_happened_at", (q) =>
+        q.eq("organizationId", organization._id),
+      )
+      .take(1);
+
+    if (usageExists.length === 0) {
+      await ctx.db.insert("usageEvents", {
+        organizationId: organization._id,
+        eventType: "telephony",
+        metricKey: "call_minutes",
+        quantity: 0,
+        unitCostInr: 2,
+        totalCostInr: 0,
+        source: "system",
+        happenedAt: now,
+      });
+    }
+
+    await ctx.db.insert("auditLogs", {
+      organizationId: organization._id,
+      actorType: "user",
+      actorId: clerkUserId,
+      action: "workspace_initialized",
+      targetType: "organization",
+      targetId: organization._id,
+      summary: "Initialized organization workspace from Clerk-authenticated session.",
+      metadata: {
+        organizationSlug: organization.slug,
+      },
+      createdAt: now,
+    });
+
+    return {
+      organizationId: organization._id,
+      organizationSlug: organization.slug,
+      viewerEmail,
+      viewerName,
     };
   },
 });
