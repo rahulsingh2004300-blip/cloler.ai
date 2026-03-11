@@ -1,5 +1,3 @@
-import type { CSSProperties } from "react";
-
 export type SectionHeadingProps = {
   eyebrow: string;
   title: string;
@@ -11,23 +9,15 @@ export function SectionHeading({
   title,
   description,
 }: SectionHeadingProps) {
-  const eyebrowStyle: CSSProperties = {
-    backgroundColor: "var(--app-accent-soft)",
-    color: "var(--app-accent)",
-  };
-
   return (
     <header>
-      <div
-        className="inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em]"
-        style={eyebrowStyle}
-      >
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
         {eyebrow}
-      </div>
-      <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+      </p>
+      <h2 className="mt-2 text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
         {title}
       </h2>
-      <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 sm:text-base">
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
         {description}
       </p>
     </header>

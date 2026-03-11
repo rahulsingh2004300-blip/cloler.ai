@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import { FeatureCard } from "./feature-card";
 import { SectionHeading } from "./section-heading";
 
 export type WorkspacePanelProps = {
@@ -18,24 +17,24 @@ export function WorkspacePanel({
   footer,
 }: WorkspacePanelProps) {
   return (
-    <section className="rounded-[2rem] border border-[color:var(--cl-color-line)] bg-[color:var(--cl-color-surface)] p-8 shadow-[0_24px_80px_-40px_var(--cl-color-shadow)] backdrop-blur">
+    <section className="rounded-xl border border-[color:var(--cl-color-line)] bg-white p-6 shadow-sm">
       <SectionHeading
         eyebrow={eyebrow}
         title={title}
         description={description}
       />
-      <div className="mt-8 grid gap-3 sm:grid-cols-2">
+      <ul className="mt-5 space-y-3 text-sm text-slate-600">
         {bullets.map((bullet) => (
-          <FeatureCard
+          <li
             key={bullet}
-            title={bullet}
-            description="Reusable placeholder content until the app gets its dedicated Step-level workflow implementation."
-            detail="Shared UI foundation"
-          />
+            className="rounded-lg border border-[color:var(--cl-color-line)] bg-slate-50 px-4 py-3"
+          >
+            {bullet}
+          </li>
         ))}
-      </div>
+      </ul>
       {footer ? (
-        <div className="mt-8 text-sm text-slate-500">{footer}</div>
+        <div className="mt-5 text-sm text-slate-500">{footer}</div>
       ) : null}
     </section>
   );
