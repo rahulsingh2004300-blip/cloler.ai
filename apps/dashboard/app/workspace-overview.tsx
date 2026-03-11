@@ -1,177 +1,81 @@
 "use client";
 
-import { Badge } from "@cloler/ui/components/badge";
-import { Button } from "@cloler/ui/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@cloler/ui/components/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@cloler/ui/components/table";
 import { api } from "@convex/_generated/api";
 import { useMutation, useQuery } from "convex/react";
-import { startTransition, useState } from "react";
+import { useState } from "react";
 import { workspaceArgs, workspaceConfig } from "./workspace-config";
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: value % 1 === 0 ? 0 : 2,
-  }).format(value);
-}
 
 export function WorkspaceOverview() {
   const overview = useQuery(api.dashboard.getWorkspaceOverview, workspaceArgs);
   const ensureDemoWorkspace = useMutation(api.seed.ensureDemoWorkspace);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [status, setStatus] = useState<string>("");
 
-  const handleRefreshWorkspace = () => {
-    startTransition(() => {
-      setIsRefreshing(true);
-      setFeedback(null);
-    });
+  const handleSync = async () => {
+    setStatus("Syncing...");
 
-    void ensureDemoWorkspace({
-      organizationSlug: workspaceConfig.organizationSlug,
-      ownerEmail: workspaceConfig.viewerEmail,
-      ownerName: workspaceConfig.viewerName,
-    })
-      .then(() => {
-        startTransition(() => {
-          setFeedback("Workspace synced.");
-        });
-      })
-      .catch((error) => {
-        startTransition(() => {
-          setFeedback(error instanceof Error ? error.message : "Sync failed.");
-        });
-      })
-      .finally(() => {
-        startTransition(() => {
-          setIsRefreshing(false);
-        });
+    try {
+      await ensureDemoWorkspace({
+        organizationSlug: workspaceConfig.organizationSlug,
+        ownerEmail: workspaceConfig.viewerEmail,
+        ownerName: workspaceConfig.viewerName,
       });
+
+      setStatus("Workspace synced.");
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "Sync failed.");
+    }
   };
 
-  if (overview === undefined) {
-    return (
-      <main className="min-h-screen bg-slate-100/70 p-6 md:p-10">
-        <div className="mx-auto max-w-6xl">
-          <Card className="border-slate-200/80 bg-white shadow-sm">
-            <CardHeader className="gap-3">
-              <div className="flex flex-wrap gap-2">
-                <Badge>Dashboard</Badge>
-                <Badge variant="outline">Connecting</Badge>
-              </div>
-              <CardTitle className="text-2xl tracking-tight">Convex workspace</CardTitle>
-              <CardDescription>Loading foundation data</CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </main>
-    );
-  }
-
-  const isReady = overview.status === "ready";
-
   return (
-    <main className="min-h-screen bg-slate-100/70 p-6 md:p-10">
-      <div className="mx-auto grid max-w-6xl gap-6">
-        <Card className="border-slate-200/80 bg-white shadow-sm">
-          <CardHeader className="gap-3">
-            <div className="flex flex-wrap gap-2">
-              <Badge>Dashboard</Badge>
-              <Badge variant="outline">Step 3</Badge>
-            </div>
-            <CardTitle className="text-3xl tracking-tight">
-              {isReady ? overview.organization.name : "Convex workspace"}
-            </CardTitle>
-            <CardDescription>Backend foundation connected</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <Card className="border-slate-200/80 bg-white shadow-none">
-                <CardHeader className="gap-1">
-                  <CardDescription>Status</CardDescription>
-                  <CardTitle className="text-lg">
-                    {isReady ? "Connected" : "Ready to seed"}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-              <Card className="border-slate-200/80 bg-white shadow-none">
-                <CardHeader className="gap-1">
-                  <CardDescription>Workspace</CardDescription>
-                  <CardTitle className="text-lg">
-                    {workspaceConfig.organizationSlug}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-              <Card className="border-slate-200/80 bg-white shadow-none">
-                <CardHeader className="gap-1">
-                  <CardDescription>Viewer</CardDescription>
-                  <CardTitle className="text-lg">
-                    {workspaceConfig.viewerName}
-                  </CardTitle>
-                </CardHeader>
-              </Card>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={handleRefreshWorkspace} disabled={isRefreshing}>
-                {isRefreshing ? "Syncing..." : "Sync workspace"}
-              </Button>
-              {feedback ? (
-                <span className="text-sm text-muted-foreground">{feedback}</span>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+    <main className="mx-auto flex min-h-screen w-full max-w-5xl items-start px-6 py-16">
+      <section className="w-full space-y-6">
+        <div className="space-y-3">
+          <p className="text-sm text-slate-500">cloler.ai / dashboard</p>
+          <h1 className="text-3xl font-semibold tracking-tight">Backend foundation shell</h1>
+          <p className="text-sm text-slate-600">UI reset complete. Convex foundation remains connected.</p>
+        </div>
 
-        {isReady ? (
-          <Card className="border-slate-200/80 bg-white shadow-sm">
-            <CardHeader className="gap-2">
-              <CardTitle className="text-xl tracking-tight">Usage</CardTitle>
-              <CardDescription>Seeded Convex data for Step 3</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-hidden rounded-lg border border-slate-200/80">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Metric</TableHead>
-                      <TableHead>Source</TableHead>
-                      <TableHead>Quantity</TableHead>
-                      <TableHead className="text-right">Cost</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {overview.recentUsageEvents.map((event) => (
-                      <TableRow key={event.id}>
-                        <TableCell className="font-medium">{event.metricKey}</TableCell>
-                        <TableCell>{event.source}</TableCell>
-                        <TableCell>{event.quantity}</TableCell>
-                        <TableCell className="text-right">
-                          {formatCurrency(event.totalCostInr)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="space-y-2 text-sm text-slate-700">
+          <p>Status: {overview ? overview.status : "loading"}</p>
+          <p>Workspace: {workspaceConfig.organizationSlug}</p>
+          <p>Viewer: {workspaceConfig.viewerName}</p>
+        </div>
+
+        <button
+          className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-900"
+          onClick={handleSync}
+          type="button"
+        >
+          Sync workspace
+        </button>
+
+        {status ? <p className="text-sm text-slate-600">{status}</p> : null}
+
+        {overview ? (
+          <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+            <table className="min-w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 bg-slate-50 text-left">
+                  <th className="px-4 py-3 font-medium">Metric</th>
+                  <th className="px-4 py-3 font-medium">Source</th>
+                  <th className="px-4 py-3 font-medium">Quantity</th>
+                  <th className="px-4 py-3 font-medium">Cost</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(overview.recentUsageEvents ?? []).map((event) => (
+                  <tr key={event.id} className="border-b border-slate-100 last:border-0">
+                    <td className="px-4 py-3">{event.metricKey}</td>
+                    <td className="px-4 py-3">{event.source}</td>
+                    <td className="px-4 py-3">{event.quantity}</td>
+                    <td className="px-4 py-3">{event.totalCostInr}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : null}
-      </div>
+      </section>
     </main>
   );
 }
