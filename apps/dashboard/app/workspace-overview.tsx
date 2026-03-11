@@ -5,6 +5,7 @@ import { Button } from "@cloler/ui/components/button";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@cloler/ui/components/card";
@@ -65,109 +66,112 @@ export function WorkspaceOverview() {
 
   if (overview === undefined) {
     return (
-      <div className="min-h-screen bg-background p-6 md:p-10">
-        <div className="mx-auto max-w-5xl">
-          <Card>
-            <CardHeader className="gap-4">
-              <div className="flex gap-2">
+      <main className="min-h-screen bg-slate-100/70 p-6 md:p-10">
+        <div className="mx-auto max-w-6xl">
+          <Card className="border-slate-200/80 bg-white shadow-sm">
+            <CardHeader className="gap-3">
+              <div className="flex flex-wrap gap-2">
                 <Badge variant="secondary">Dashboard</Badge>
                 <Badge variant="outline">Connecting</Badge>
               </div>
-              <CardTitle>Convex workspace</CardTitle>
+              <CardTitle className="text-2xl tracking-tight">Convex workspace</CardTitle>
+              <CardDescription>Loading foundation data</CardDescription>
             </CardHeader>
           </Card>
         </div>
-      </div>
+      </main>
     );
   }
 
   const isReady = overview.status === "ready";
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-10">
-      <div className="mx-auto max-w-5xl space-y-6">
-        <Card>
-          <CardHeader className="gap-4">
-            <div className="flex gap-2">
+    <main className="min-h-screen bg-slate-100/70 p-6 md:p-10">
+      <div className="mx-auto grid max-w-6xl gap-6">
+        <Card className="border-slate-200/80 bg-white shadow-sm">
+          <CardHeader className="gap-3">
+            <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">Dashboard</Badge>
               <Badge variant="outline">Step 3</Badge>
             </div>
-            <CardTitle>
+            <CardTitle className="text-3xl tracking-tight">
               {isReady ? overview.organization.name : "Convex workspace"}
             </CardTitle>
+            <CardDescription>Backend foundation connected</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-lg border p-4">
-                <div className="text-xs uppercase text-muted-foreground">
-                  Status
-                </div>
-                <div className="mt-2 font-medium">
-                  {isReady ? "Connected" : "Ready to seed"}
-                </div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-xs uppercase text-muted-foreground">
-                  Workspace
-                </div>
-                <div className="mt-2 font-medium">
-                  {workspaceConfig.organizationSlug}
-                </div>
-              </div>
-              <div className="rounded-lg border p-4">
-                <div className="text-xs uppercase text-muted-foreground">
-                  Viewer
-                </div>
-                <div className="mt-2 font-medium">
-                  {workspaceConfig.viewerName}
-                </div>
-              </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Card className="border-slate-200/80 bg-white shadow-none">
+                <CardHeader className="gap-1">
+                  <CardDescription>Status</CardDescription>
+                  <CardTitle className="text-lg">
+                    {isReady ? "Connected" : "Ready to seed"}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card className="border-slate-200/80 bg-white shadow-none">
+                <CardHeader className="gap-1">
+                  <CardDescription>Workspace</CardDescription>
+                  <CardTitle className="text-lg">
+                    {workspaceConfig.organizationSlug}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
+              <Card className="border-slate-200/80 bg-white shadow-none">
+                <CardHeader className="gap-1">
+                  <CardDescription>Viewer</CardDescription>
+                  <CardTitle className="text-lg">
+                    {workspaceConfig.viewerName}
+                  </CardTitle>
+                </CardHeader>
+              </Card>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <Button onClick={handleRefreshWorkspace} disabled={isRefreshing}>
                 {isRefreshing ? "Syncing..." : "Sync workspace"}
               </Button>
               {feedback ? (
-                <span className="text-sm text-muted-foreground">
-                  {feedback}
-                </span>
+                <span className="text-sm text-muted-foreground">{feedback}</span>
               ) : null}
             </div>
           </CardContent>
         </Card>
 
         {isReady ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>Usage</CardTitle>
+          <Card className="border-slate-200/80 bg-white shadow-sm">
+            <CardHeader className="gap-2">
+              <CardTitle className="text-xl tracking-tight">Usage</CardTitle>
+              <CardDescription>Seeded Convex data for Step 3</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Metric</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Quantity</TableHead>
-                    <TableHead>Cost</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {overview.recentUsageEvents.map((event) => (
-                    <TableRow key={event.id}>
-                      <TableCell>{event.metricKey}</TableCell>
-                      <TableCell>{event.source}</TableCell>
-                      <TableCell>{event.quantity}</TableCell>
-                      <TableCell>
-                        {formatCurrency(event.totalCostInr)}
-                      </TableCell>
+              <div className="overflow-hidden rounded-lg border border-slate-200/80">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Metric</TableHead>
+                      <TableHead>Source</TableHead>
+                      <TableHead>Quantity</TableHead>
+                      <TableHead className="text-right">Cost</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {overview.recentUsageEvents.map((event) => (
+                      <TableRow key={event.id}>
+                        <TableCell className="font-medium">{event.metricKey}</TableCell>
+                        <TableCell>{event.source}</TableCell>
+                        <TableCell>{event.quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(event.totalCostInr)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         ) : null}
       </div>
-    </div>
+    </main>
   );
 }
