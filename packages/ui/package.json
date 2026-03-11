@@ -5,7 +5,10 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles/globals.css",
+    "./components/*": "./src/components/*.tsx",
+    "./lib/*": "./src/lib/*.ts",
+    "./hooks/*": "./src/hooks/*.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -16,7 +19,11 @@
     "@types/react-dom": "^19.2.3"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "radix-ui": "^1.4.3",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "tailwind-merge": "^3.5.0"
   }
 }
