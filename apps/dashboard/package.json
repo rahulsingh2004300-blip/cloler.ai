@@ -8,6 +8,7 @@
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.0.4",
     "@cloler/ui": "workspace:*",
     "convex": "^1.32.0",
     "next": "^16.1.6",

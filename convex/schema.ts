@@ -5,6 +5,7 @@ export default defineSchema({
   organizations: defineTable({
     name: v.string(),
     slug: v.string(),
+    clerkOrganizationId: v.optional(v.string()),
     status: v.union(
       v.literal("trial"),
       v.literal("active"),
@@ -30,6 +31,7 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("by_slug", ["slug"])
+    .index("by_clerk_organization_id", ["clerkOrganizationId"])
     .index("by_created_at", ["createdAt"]),
 
   users: defineTable({
