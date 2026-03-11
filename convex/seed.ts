@@ -3,6 +3,7 @@ import { mutation } from "./_generated/server";
 import {
   DEFAULT_ORGANIZATION_SLUG,
   DEFAULT_VIEWER_EMAIL,
+  DEFAULT_VIEWER_NAME,
   getOrganizationBySlug,
 } from "./lib/auth";
 
@@ -16,7 +17,7 @@ export const ensureDemoWorkspace = mutation({
     const now = Date.now();
     const organizationSlug = args.organizationSlug ?? DEFAULT_ORGANIZATION_SLUG;
     const ownerEmail = args.ownerEmail ?? DEFAULT_VIEWER_EMAIL;
-    const ownerName = args.ownerName ?? "Rahul Kumar";
+    const ownerName = args.ownerName ?? DEFAULT_VIEWER_NAME;
     let createdRecords = 0;
 
     let organization = await getOrganizationBySlug(ctx.db, organizationSlug);

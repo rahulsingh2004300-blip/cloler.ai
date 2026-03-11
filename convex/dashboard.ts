@@ -1,10 +1,11 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { findViewerContext, resolveViewerInput } from "./lib/auth";
 import {
-  DEFAULT_ORGANIZATION_SLUG,
-  DEFAULT_VIEWER_EMAIL,
-  findViewerContext,
-} from "./lib/auth";
+  listOrganizationMembers,
+  listRecentAuditLogs,
+  listRecentUsageEvents,
+} from "./lib/organizationQueries";
 import { TELEPHONY_SYNC_BOUNDARIES } from "./lib/syncBoundaries";
 
 export const getWorkspaceOverview = query({
@@ -13,8 +14,7 @@ export const getWorkspaceOverview = query({
     viewerEmail: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const organizationSlug = args.organizationSlug ?? DEFAULT_ORGANIZATION_SLUG;
-    const viewerEmail = args.viewerEmail ?? DEFAULT_VIEWER_EMAIL;
+    const { organizationSlug, viewerEmail } = resolveViewerInput(args);
     const viewerContext = await findViewerContext(ctx.db, {
       organizationSlug,
       viewerEmail,
@@ -29,28 +29,11 @@ export const getWorkspaceOverview = query({
       };
     }
 
-    const members = await ctx.db
-      .query("users")
-      .withIndex("by_organization", (q) =>
-        q.eq("organizationId", viewerContext.organization._id),
-      )
-      .collect();
-
-    const usageEvents = await ctx.db
-      .query("usageEvents")
-      .withIndex("by_organization_and_happened_at", (q) =>
-        q.eq("organizationId", viewerContext.organization._id),
-      )
-      .order("desc")
-      .take(12);
-
-    const auditFeed = await ctx.db
-      .query("auditLogs")
-      .withIndex("by_organization_and_created_at", (q) =>
-        q.eq("organizationId", viewerContext.organization._id),
-      )
-      .order("desc")
-      .take(6);
+    const [members, usageEvents, auditFeed] = await Promise.all([
+      listOrganizationMembers(ctx.db, viewerContext.organization._id),
+      listRecentUsageEvents(ctx.db, viewerContext.organization._id),
+      listRecentAuditLogs(ctx.db, viewerContext.organization._id),
+    ]);
 
     const callUsageEvents = usageEvents.filter(
       (event) => event.metricKey === "call_minutes",

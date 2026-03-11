@@ -3,6 +3,7 @@ import type { DatabaseReader } from "../_generated/server";
 
 export const DEFAULT_ORGANIZATION_SLUG = "cloler-demo";
 export const DEFAULT_VIEWER_EMAIL = "owner@cloler.ai";
+export const DEFAULT_VIEWER_NAME = "Rahul Kumar";
 
 export type ViewerContext = {
   organization: Doc<"organizations">;
@@ -14,6 +15,18 @@ export type ViewerContext = {
     userId: Doc<"users">["_id"] | null;
   };
 };
+
+export function resolveViewerInput(input?: {
+  organizationSlug?: string;
+  viewerEmail?: string;
+}) {
+  return {
+    organizationSlug:
+      input?.organizationSlug?.trim() || DEFAULT_ORGANIZATION_SLUG,
+    viewerEmail:
+      input?.viewerEmail?.trim().toLowerCase() || DEFAULT_VIEWER_EMAIL,
+  };
+}
 
 export async function getOrganizationBySlug(db: DatabaseReader, slug: string) {
   return db
@@ -29,8 +42,7 @@ export async function findViewerContext(
     viewerEmail?: string;
   },
 ): Promise<ViewerContext | null> {
-  const organizationSlug = input?.organizationSlug ?? DEFAULT_ORGANIZATION_SLUG;
-  const viewerEmail = input?.viewerEmail ?? DEFAULT_VIEWER_EMAIL;
+  const { organizationSlug, viewerEmail } = resolveViewerInput(input);
   const organization = await getOrganizationBySlug(db, organizationSlug);
 
   if (!organization) {
