@@ -1,8 +1,2 @@
 @import "tailwindcss";
 @import "@cloler/ui/styles.css";
-
-:root {
-  --app-accent: #334155;
-  --app-accent-soft: rgba(51, 65, 85, 0.08);
-  --app-background: #fafaf9;
-}
