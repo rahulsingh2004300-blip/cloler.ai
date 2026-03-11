@@ -71,7 +71,7 @@ export function WorkspaceOverview() {
           <Card className="border-slate-200/80 bg-white shadow-sm">
             <CardHeader className="gap-3">
               <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">Dashboard</Badge>
+                <Badge>Dashboard</Badge>
                 <Badge variant="outline">Connecting</Badge>
               </div>
               <CardTitle className="text-2xl tracking-tight">Convex workspace</CardTitle>
@@ -91,7 +91,7 @@ export function WorkspaceOverview() {
         <Card className="border-slate-200/80 bg-white shadow-sm">
           <CardHeader className="gap-3">
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">Dashboard</Badge>
+              <Badge>Dashboard</Badge>
               <Badge variant="outline">Step 3</Badge>
             </div>
             <CardTitle className="text-3xl tracking-tight">
