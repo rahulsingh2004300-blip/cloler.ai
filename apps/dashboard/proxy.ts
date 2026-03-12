@@ -3,9 +3,17 @@ import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 const isOrgSelectionRoute = createRouteMatcher(["/org-selection(.*)"]);
+const isDevMonitoringRoute = createRouteMatcher([
+  "/monitoring-test(.*)",
+  "/api/monitoring/test-error(.*)",
+]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) {
+    return NextResponse.next();
+  }
+
+  if (process.env.NODE_ENV !== "production" && isDevMonitoringRoute(req)) {
     return NextResponse.next();
   }
 
