@@ -9,6 +9,7 @@ Monorepo foundation for the `cloler.ai` voice cloning and AI calling SaaS.
 - `apps/admin` - internal admin workspace
 - `apps/widget` - widget preview and embed development surface
 - `packages/ui` - shared React UI primitives
+- `packages/observability` - shared structured logging and env validation helpers
 - `packages/typescript-config` - shared TypeScript settings
 - `packages/eslint-config` - shared ESLint settings
 - `services/telephony-agent` - Python service placeholder for LiveKit/Vobiz/Sarvam integration
@@ -26,6 +27,7 @@ This separation keeps the low-cost call stack and premium cloned-voice stack ind
 ## Scripts
 
 - `pnpm dev` - run all app dev servers through Turborepo
+- `pnpm env:check` - validate required environment variables for Step 4 and Step 5
 - `pnpm build` - build all workspaces
 - `pnpm lint` - lint all workspaces
 - `pnpm typecheck` - typecheck all workspaces
@@ -39,10 +41,16 @@ This separation keeps the low-cost call stack and premium cloned-voice stack ind
 - `http://localhost:3002` - admin
 - `http://localhost:3003` - widget
 
+## Monitoring and observability
+
+- Sentry is wired into all four Next.js surfaces via app-level instrumentation files.
+- Dashboard includes a controlled test surface at `/monitoring-test`.
+- Convex backend functions emit structured JSON logs for key auth/onboarding flows.
+
 ## Workflow
 
 - branch per step using `codex/step-XX-short-name`
-- validate with lint, typecheck, and build
+- validate with `pnpm env:check`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`
 - merge each step into `main` before starting the next step
 
 Detailed delivery sequencing lives in `PROJECT_BUILD_PLAN.md`.

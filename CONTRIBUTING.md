@@ -12,13 +12,14 @@
 1. Start from an up-to-date `main`.
 2. Create a step branch.
 3. Implement only the scoped step deliverable.
-4. Run `pnpm lint`, `pnpm typecheck`, and `pnpm build`.
+4. Run `pnpm env:check`, `pnpm lint`, `pnpm typecheck`, and `pnpm build`.
 5. Push the branch and review the diff.
 6. Merge the step branch into `main`.
 
 ## Workspace commands
 
 - `pnpm dev` runs all app dev servers through Turborepo.
+- `pnpm env:check` validates required environment variables.
 - `pnpm lint` checks the monorepo lint rules.
 - `pnpm typecheck` validates TypeScript packages and apps.
 - `pnpm build` verifies production builds for the web apps.
@@ -35,4 +36,6 @@
 
 - Commit example files only.
 - Keep real values in ignored `.env.local` files.
+- Use `NEXT_PUBLIC_` only for non-secret browser-safe keys.
+- Keep secret values in server-only env vars such as `CLERK_SECRET_KEY` and `SENTRY_DSN`.
 - Prefer environment-driven defaults over hardcoded demo identities in app code.

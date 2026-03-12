@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { validateAdminEnv } from "../env";
 import "./globals.css";
+
+validateAdminEnv();
 
 export const metadata: Metadata = {
   title: "Admin console | cloler.ai",

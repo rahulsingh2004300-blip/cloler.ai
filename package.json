@@ -11,6 +11,7 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "env:check": "node ./scripts/validate-env.mjs",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "convex:dev": "convex dev",
