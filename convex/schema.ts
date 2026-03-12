@@ -1,4 +1,4 @@
-﻿import { defineSchema, defineTable } from "convex/server";
+import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
@@ -120,9 +120,11 @@ export default defineSchema({
     generationCount: v.number(),
     defaultForCalls: v.boolean(),
     stockVoiceKey: v.optional(v.string()),
+    providerVoiceId: v.optional(v.string()),
     cloneJobRequestedAt: v.optional(v.number()),
     lastCloneJobAt: v.optional(v.number()),
     lastCloneError: v.optional(v.string()),
+    lastPreviewGeneratedAt: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -150,6 +152,27 @@ export default defineSchema({
     .index("by_voice_profile", ["voiceProfileId"])
     .index("by_organization_and_created_at", ["organizationId", "createdAt"]),
 
+  voiceCloneJobs: defineTable({
+    organizationId: v.id("organizations"),
+    voiceProfileId: v.id("voiceProfiles"),
+    requestedByUserId: v.optional(v.id("users")),
+    provider: v.union(v.literal("resonance_pipeline")),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("preparing_samples"),
+      v.literal("training"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    sampleCount: v.number(),
+    requestedAt: v.number(),
+    startedAt: v.optional(v.number()),
+    completedAt: v.optional(v.number()),
+    failureReason: v.optional(v.string()),
+  })
+    .index("by_voice_profile", ["voiceProfileId"])
+    .index("by_organization_and_requested_at", ["organizationId", "requestedAt"]),
+
   voiceGenerations: defineTable({
     organizationId: v.id("organizations"),
     voiceProfileId: v.id("voiceProfiles"),
@@ -165,8 +188,12 @@ export default defineSchema({
       v.literal("sarvam_bulbul_v3"),
       v.literal("custom_preview"),
     ),
+    playbackMode: v.optional(
+      v.union(v.literal("browser_tts"), v.literal("stored_audio")),
+    ),
     text: v.string(),
     characterCount: v.number(),
+    generatedSeconds: v.optional(v.number()),
     outputStorageId: v.optional(v.id("_storage")),
     failureReason: v.optional(v.string()),
     createdAt: v.number(),
