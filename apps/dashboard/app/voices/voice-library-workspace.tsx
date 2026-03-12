@@ -690,12 +690,15 @@ export function VoiceLibraryWorkspace() {
                             ["Pace", "pace"],
                             ["Stability", "stability"],
                             ["Warmth", "warmth"],
-                          ] as const).map(([label, key]) => (
-                            <div className="rounded-2xl border border-border/70 bg-white p-4" key={key}>
-                              <div className="mb-3 flex items-center justify-between"><p className="text-sm font-medium text-foreground">{label}</p><span className="text-sm text-muted-foreground">{activeSettings.tuning[key]}</span></div>
-                              <input className="h-2 w-full cursor-pointer appearance-none rounded-full" max={100} min={0} onChange={(event) => updateVoiceSetting(voice.id, { tuning: { [key]: Number(event.target.value) } as Partial<VoiceTuning> })} style={sliderTrackClass(activeSettings.tuning[key])} type="range" value={activeSettings.tuning[key]} />
-                            </div>
-                          ))}
+                          ] as const).map(([label, key]) => {
+                            const sliderValue = activeSettings.tuning[key] ?? defaultTuning[key];
+                            return (
+                              <div className="rounded-2xl border border-border/70 bg-white p-4" key={key}>
+                                <div className="mb-3 flex items-center justify-between"><p className="text-sm font-medium text-foreground">{label}</p><span className="text-sm text-muted-foreground">{sliderValue}</span></div>
+                                <input className="h-2 w-full cursor-pointer appearance-none rounded-full" max={100} min={0} onChange={(event) => updateVoiceSetting(voice.id, { tuning: { [key]: Number(event.target.value) } as Partial<VoiceTuning> })} style={sliderTrackClass(sliderValue)} type="range" value={sliderValue} />
+                              </div>
+                            );
+                          })}
                         </div>
 
                         <div className="space-y-2">
@@ -755,4 +758,5 @@ export function VoiceLibraryWorkspace() {
     </div>
   );
 }
+
 
