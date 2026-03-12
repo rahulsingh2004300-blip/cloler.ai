@@ -1,4 +1,4 @@
-import { internal } from "./_generated/api";
+﻿import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
   internalMutation,
@@ -16,6 +16,44 @@ const MINIMUM_REFERENCE_SAMPLES = 3;
 const CLONE_PREP_DELAY_MS = 800;
 const CLONE_TRAIN_DELAY_MS = 1800;
 const PREVIEW_PROCESS_DELAY_MS = 900;
+const themePresetValidator = v.union(
+  v.literal("sales_opener"),
+  v.literal("negotiation"),
+  v.literal("appointment_booking"),
+  v.literal("support_clarity"),
+  v.literal("payment_reminder"),
+  v.literal("local_outreach"),
+);
+
+function defaultVoiceTuning() {
+  return {
+    creativity: 42,
+    expressiveness: 58,
+    pace: 50,
+    stability: 68,
+    warmth: 55,
+  };
+}
+
+function clampSliderValue(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function sanitizeVoiceTuning(input: {
+  creativity: number;
+  expressiveness: number;
+  pace: number;
+  stability: number;
+  warmth: number;
+}) {
+  return {
+    creativity: clampSliderValue(input.creativity),
+    expressiveness: clampSliderValue(input.expressiveness),
+    pace: clampSliderValue(input.pace),
+    stability: clampSliderValue(input.stability),
+    warmth: clampSliderValue(input.warmth),
+  };
+}
 
 function slugifyVoiceName(value: string) {
   return value
@@ -56,8 +94,9 @@ function getVoiceUsageUnitCost(provider: Doc<"voiceGenerations">["provider"]) {
   }
 }
 
-function estimateGeneratedSeconds(characterCount: number) {
-  return Math.max(4, Math.ceil(characterCount / 11));
+function estimateGeneratedSeconds(characterCount: number, pace: number) {
+  const paceFactor = Math.max(0.65, Math.min(1.35, 1 - (pace - 50) / 140));
+  return Math.max(4, Math.ceil((characterCount / 11) * paceFactor));
 }
 
 async function requireViewerContext(
@@ -148,15 +187,9 @@ export const getVoiceLibrary = query({
           listVoiceCloneJobsForProfile(ctx, voiceProfile._id),
         ]);
 
-        const sortedSamples = [...samples].sort(
-          (left, right) => right.createdAt - left.createdAt,
-        );
-        const sortedGenerations = [...generations].sort(
-          (left, right) => right.createdAt - left.createdAt,
-        );
-        const sortedCloneJobs = [...cloneJobs].sort(
-          (left, right) => right.requestedAt - left.requestedAt,
-        );
+        const sortedSamples = [...samples].sort((left, right) => right.createdAt - left.createdAt);
+        const sortedGenerations = [...generations].sort((left, right) => right.createdAt - left.createdAt);
+        const sortedCloneJobs = [...cloneJobs].sort((left, right) => right.requestedAt - left.requestedAt);
 
         const latestSamples = await Promise.all(
           sortedSamples.slice(0, 3).map(async (sample) => ({
@@ -174,13 +207,19 @@ export const getVoiceLibrary = query({
           id: generation._id,
           status: generation.status,
           provider: generation.provider,
+          presetKey: generation.presetKey,
+          playbackMode: generation.playbackMode ?? "browser_tts",
+          creativity: generation.creativity,
+          expressiveness: generation.expressiveness,
+          pace: generation.pace,
+          stability: generation.stability,
+          warmth: generation.warmth,
           text: generation.text,
           characterCount: generation.characterCount,
+          generatedSeconds: generation.generatedSeconds,
           createdAt: generation.createdAt,
           completedAt: generation.completedAt,
           failureReason: generation.failureReason,
-          playbackMode: generation.playbackMode ?? "browser_tts",
-          generatedSeconds: generation.generatedSeconds,
           canPlay: generation.status === "ready",
         }));
 
@@ -208,10 +247,17 @@ export const getVoiceLibrary = query({
           cloneStatus: voiceProfile.cloneStatus,
           sampleCount: samples.length,
           generationCount: generations.length,
-          previewCount: generations.filter((generation) => generation.status === "ready")
-            .length,
+          previewCount: generations.filter((generation) => generation.status === "ready").length,
           defaultForCalls: voiceProfile.defaultForCalls,
           providerVoiceId: voiceProfile.providerVoiceId,
+          stockVoiceKey: voiceProfile.stockVoiceKey,
+          themePresetKey: voiceProfile.themePresetKey,
+          creativity: voiceProfile.creativity,
+          expressiveness: voiceProfile.expressiveness,
+          pace: voiceProfile.pace,
+          stability: voiceProfile.stability,
+          warmth: voiceProfile.warmth,
+          previewScript: voiceProfile.previewScript,
           lastPreviewGeneratedAt: voiceProfile.lastPreviewGeneratedAt,
           updatedAt: voiceProfile.updatedAt,
           latestSamples,
@@ -230,22 +276,10 @@ export const getVoiceLibrary = query({
       viewer: viewerContext.actor,
       stats: {
         voiceCount: voiceCards.length,
-        totalSamples: voiceCards.reduce(
-          (count, voiceProfile) => count + voiceProfile.sampleCount,
-          0,
-        ),
-        readyVoices: voiceCards.filter(
-          (voiceProfile) => voiceProfile.cloneStatus === "ready",
-        ).length,
-        pendingCloneVoices: voiceCards.filter((voiceProfile) =>
-          ["ready_for_training", "training_requested", "training"].includes(
-            voiceProfile.cloneStatus,
-          ),
-        ).length,
-        previewCount: voiceCards.reduce(
-          (count, voiceProfile) => count + voiceProfile.previewCount,
-          0,
-        ),
+        totalSamples: voiceCards.reduce((count, voiceProfile) => count + voiceProfile.sampleCount, 0),
+        readyVoices: voiceCards.filter((voiceProfile) => voiceProfile.cloneStatus === "ready").length,
+        pendingCloneVoices: voiceCards.filter((voiceProfile) => ["ready_for_training", "training_requested", "training"].includes(voiceProfile.cloneStatus)).length,
+        previewCount: voiceCards.reduce((count, voiceProfile) => count + voiceProfile.previewCount, 0),
       },
       voices: voiceCards,
     };
@@ -257,11 +291,9 @@ export const createVoiceProfile = mutation({
     organizationSlug: v.optional(v.string()),
     name: v.string(),
     description: v.optional(v.string()),
-    language: v.union(
-      v.literal("en-IN"),
-      v.literal("hi-IN"),
-      v.literal("hinglish"),
-    ),
+    language: v.union(v.literal("en-IN"), v.literal("hi-IN"), v.literal("hinglish")),
+    mode: v.union(v.literal("custom"), v.literal("stock")),
+    stockVoiceKey: v.optional(v.union(v.literal("bulbul_v2"), v.literal("bulbul_v3"))),
   },
   handler: async (ctx, args) => {
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
@@ -270,6 +302,10 @@ export const createVoiceProfile = mutation({
 
     if (name.length < 2) {
       throw new Error("Voice name must be at least 2 characters.");
+    }
+
+    if (args.mode === "stock" && !args.stockVoiceKey) {
+      throw new Error("Select a stock voice before creating this profile.");
     }
 
     const baseSlug = slugifyVoiceName(name) || `voice-${now}`;
@@ -281,7 +317,7 @@ export const createVoiceProfile = mutation({
       .unique();
 
     const slug = existingSlug ? `${baseSlug}-${String(now).slice(-4)}` : baseSlug;
-
+    const defaults = defaultVoiceTuning();
     const voiceProfileId = await ctx.db.insert("voiceProfiles", {
       organizationId: viewerContext.organization._id,
       createdByUserId: viewerContext.actor.userId,
@@ -289,11 +325,23 @@ export const createVoiceProfile = mutation({
       slug,
       description: args.description?.trim() || undefined,
       language: args.language,
-      mode: "custom",
-      cloneStatus: "draft",
+      mode: args.mode,
+      cloneStatus: args.mode === "stock" ? "ready" : "draft",
       sampleCount: 0,
       generationCount: 0,
       defaultForCalls: false,
+      stockVoiceKey: args.mode === "stock" ? args.stockVoiceKey : undefined,
+      providerVoiceId:
+        args.mode === "stock" && args.stockVoiceKey
+          ? `stock_${args.stockVoiceKey}`
+          : undefined,
+      themePresetKey: "sales_opener",
+      creativity: defaults.creativity,
+      expressiveness: defaults.expressiveness,
+      pace: defaults.pace,
+      stability: defaults.stability,
+      warmth: defaults.warmth,
+      previewScript: undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -309,6 +357,8 @@ export const createVoiceProfile = mutation({
       metadata: {
         language: args.language,
         slug,
+        mode: args.mode,
+        stockVoiceKey: args.stockVoiceKey,
       },
       createdAt: now,
     });
@@ -317,12 +367,54 @@ export const createVoiceProfile = mutation({
       organizationId: viewerContext.organization._id,
       voiceProfileId,
       slug,
+      mode: args.mode,
     });
 
-    return {
-      voiceProfileId,
-      slug,
-    };
+    return { voiceProfileId, slug };
+  },
+});
+
+export const updateVoiceProfileStyle = mutation({
+  args: {
+    organizationSlug: v.optional(v.string()),
+    voiceProfileId: v.id("voiceProfiles"),
+    themePresetKey: themePresetValidator,
+    creativity: v.number(),
+    expressiveness: v.number(),
+    pace: v.number(),
+    stability: v.number(),
+    warmth: v.number(),
+    previewScript: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
+    const voiceProfile = await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
+    const now = Date.now();
+    const tuning = sanitizeVoiceTuning(args);
+
+    await ctx.db.patch(voiceProfile._id, {
+      themePresetKey: args.themePresetKey,
+      ...tuning,
+      previewScript: args.previewScript?.trim() || undefined,
+      updatedAt: now,
+    });
+
+    await ctx.db.insert("auditLogs", {
+      organizationId: viewerContext.organization._id,
+      actorType: "user",
+      actorId: viewerContext.actor.clerkUserId,
+      action: "voice_style_updated",
+      targetType: "voice_profile",
+      targetId: voiceProfile._id,
+      summary: `Updated voice tuning for ${voiceProfile.name}.`,
+      metadata: {
+        themePresetKey: args.themePresetKey,
+        ...tuning,
+      },
+      createdAt: now,
+    });
+
+    return { voiceProfileId: voiceProfile._id };
   },
 });
 
@@ -334,9 +426,7 @@ export const generateVoiceSampleUploadUrl = mutation({
   handler: async (ctx, args) => {
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
     await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
-
     const uploadUrl = await ctx.storage.generateUploadUrl();
-
     return { uploadUrl };
   },
 });
@@ -353,11 +443,7 @@ export const saveUploadedVoiceSample = mutation({
   },
   handler: async (ctx, args) => {
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
-    const voiceProfile = await getVoiceProfileOrThrow(
-      ctx,
-      viewerContext.organization._id,
-      args.voiceProfileId,
-    );
+    const voiceProfile = await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
     const now = Date.now();
 
     await ctx.db.insert("voiceSamples", {
@@ -375,9 +461,11 @@ export const saveUploadedVoiceSample = mutation({
 
     const nextSampleCount = voiceProfile.sampleCount + 1;
     const nextStatus =
-      nextSampleCount >= MINIMUM_REFERENCE_SAMPLES
-        ? "ready_for_training"
-        : "samples_pending";
+      voiceProfile.mode === "stock"
+        ? "ready"
+        : nextSampleCount >= MINIMUM_REFERENCE_SAMPLES
+          ? "ready_for_training"
+          : "samples_pending";
 
     await ctx.db.patch(voiceProfile._id, {
       sampleCount: nextSampleCount,
@@ -415,18 +503,12 @@ export const setDefaultVoiceProfile = mutation({
   },
   handler: async (ctx, args) => {
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
-    const voiceProfile = await getVoiceProfileOrThrow(
-      ctx,
-      viewerContext.organization._id,
-      args.voiceProfileId,
-    );
+    const voiceProfile = await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
     const now = Date.now();
 
     const voiceProfiles = await ctx.db
       .query("voiceProfiles")
-      .withIndex("by_organization_and_updated_at", (q) =>
-        q.eq("organizationId", viewerContext.organization._id),
-      )
+      .withIndex("by_organization_and_updated_at", (q) => q.eq("organizationId", viewerContext.organization._id))
       .collect();
 
     await Promise.all(
@@ -460,22 +542,18 @@ export const requestCloneTraining = mutation({
   },
   handler: async (ctx, args) => {
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
-    const voiceProfile = await getVoiceProfileOrThrow(
-      ctx,
-      viewerContext.organization._id,
-      args.voiceProfileId,
-    );
+    const voiceProfile = await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
+
+    if (voiceProfile.mode === "stock") {
+      throw new Error("Stock voices do not require clone training.");
+    }
 
     if (voiceProfile.sampleCount < MINIMUM_REFERENCE_SAMPLES) {
-      throw new Error(
-        `Upload at least ${MINIMUM_REFERENCE_SAMPLES} reference samples before starting clone training.`,
-      );
+      throw new Error(`Upload at least ${MINIMUM_REFERENCE_SAMPLES} reference samples before starting clone training.`);
     }
 
     const existingCloneJobs = await listVoiceCloneJobsForProfile(ctx, voiceProfile._id);
-    const hasPendingCloneJob = existingCloneJobs.some((job) =>
-      ["queued", "preparing_samples", "training"].includes(job.status),
-    );
+    const hasPendingCloneJob = existingCloneJobs.some((job) => ["queued", "preparing_samples", "training"].includes(job.status));
 
     if (hasPendingCloneJob) {
       throw new Error("Clone training is already in progress for this voice.");
@@ -514,11 +592,7 @@ export const requestCloneTraining = mutation({
       createdAt: now,
     });
 
-    await ctx.scheduler.runAfter(
-      0,
-      internal.voices.beginCloneTrainingLifecycle,
-      { cloneJobId },
-    );
+    await ctx.scheduler.runAfter(0, internal.voices.beginCloneTrainingLifecycle, { cloneJobId });
 
     return { status: "training_requested" as const, cloneJobId };
   },
@@ -529,14 +603,16 @@ export const requestVoicePreviewGeneration = mutation({
     organizationSlug: v.optional(v.string()),
     voiceProfileId: v.id("voiceProfiles"),
     text: v.string(),
+    presetKey: themePresetValidator,
+    creativity: v.number(),
+    expressiveness: v.number(),
+    pace: v.number(),
+    stability: v.number(),
+    warmth: v.number(),
   },
   handler: async (ctx, args) => {
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
-    const voiceProfile = await getVoiceProfileOrThrow(
-      ctx,
-      viewerContext.organization._id,
-      args.voiceProfileId,
-    );
+    const voiceProfile = await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
     const text = args.text.trim();
 
     if (text.length < 12) {
@@ -547,6 +623,7 @@ export const requestVoicePreviewGeneration = mutation({
       throw new Error("Finish clone training before generating a preview.");
     }
 
+    const tuning = sanitizeVoiceTuning(args);
     const now = Date.now();
     const provider = getGenerationProvider(voiceProfile);
     const generationId = await ctx.db.insert("voiceGenerations", {
@@ -555,6 +632,8 @@ export const requestVoicePreviewGeneration = mutation({
       requestedByUserId: viewerContext.actor.userId,
       status: "queued",
       provider,
+      presetKey: args.presetKey,
+      ...tuning,
       text,
       characterCount: text.length,
       createdAt: now,
@@ -562,6 +641,9 @@ export const requestVoicePreviewGeneration = mutation({
 
     await ctx.db.patch(voiceProfile._id, {
       generationCount: voiceProfile.generationCount + 1,
+      themePresetKey: args.presetKey,
+      ...tuning,
+      previewScript: text,
       updatedAt: now,
     });
 
@@ -576,116 +658,63 @@ export const requestVoicePreviewGeneration = mutation({
       metadata: {
         provider,
         characterCount: text.length,
+        presetKey: args.presetKey,
+        ...tuning,
       },
       createdAt: now,
     });
 
-    await ctx.scheduler.runAfter(
-      0,
-      internal.voices.beginVoicePreviewGeneration,
-      { generationId },
-    );
+    await ctx.scheduler.runAfter(0, internal.voices.beginVoicePreviewGeneration, { generationId });
 
     return { generationId, status: "queued" as const };
   },
 });
 
 export const beginCloneTrainingLifecycle = internalMutation({
-  args: {
-    cloneJobId: v.id("voiceCloneJobs"),
-  },
+  args: { cloneJobId: v.id("voiceCloneJobs") },
   handler: async (ctx, args) => {
     const cloneJob = await ctx.db.get(args.cloneJobId);
-
-    if (!cloneJob || cloneJob.status !== "queued") {
-      return;
-    }
-
+    if (!cloneJob || cloneJob.status !== "queued") return;
     const voiceProfile = await ctx.db.get(cloneJob.voiceProfileId);
     const now = Date.now();
-
-    await ctx.db.patch(cloneJob._id, {
-      status: "preparing_samples",
-      startedAt: now,
-    });
-
+    await ctx.db.patch(cloneJob._id, { status: "preparing_samples", startedAt: now });
     if (voiceProfile) {
-      await ctx.db.patch(voiceProfile._id, {
-        cloneStatus: "training_requested",
-        updatedAt: now,
-      });
+      await ctx.db.patch(voiceProfile._id, { cloneStatus: "training_requested", updatedAt: now });
     }
-
-    await ctx.scheduler.runAfter(
-      CLONE_PREP_DELAY_MS,
-      internal.voices.advanceCloneTrainingLifecycle,
-      { cloneJobId: cloneJob._id },
-    );
+    await ctx.scheduler.runAfter(CLONE_PREP_DELAY_MS, internal.voices.advanceCloneTrainingLifecycle, { cloneJobId: cloneJob._id });
   },
 });
 
 export const advanceCloneTrainingLifecycle = internalMutation({
-  args: {
-    cloneJobId: v.id("voiceCloneJobs"),
-  },
+  args: { cloneJobId: v.id("voiceCloneJobs") },
   handler: async (ctx, args) => {
     const cloneJob = await ctx.db.get(args.cloneJobId);
-
-    if (!cloneJob || cloneJob.status !== "preparing_samples") {
-      return;
-    }
-
+    if (!cloneJob || cloneJob.status !== "preparing_samples") return;
     const voiceProfile = await ctx.db.get(cloneJob.voiceProfileId);
     const now = Date.now();
-
-    await ctx.db.patch(cloneJob._id, {
-      status: "training",
-    });
-
+    await ctx.db.patch(cloneJob._id, { status: "training" });
     if (voiceProfile) {
-      await ctx.db.patch(voiceProfile._id, {
-        cloneStatus: "training",
-        updatedAt: now,
-      });
+      await ctx.db.patch(voiceProfile._id, { cloneStatus: "training", updatedAt: now });
     }
-
-    await ctx.scheduler.runAfter(
-      CLONE_TRAIN_DELAY_MS,
-      internal.voices.completeCloneTrainingLifecycle,
-      { cloneJobId: cloneJob._id },
-    );
+    await ctx.scheduler.runAfter(CLONE_TRAIN_DELAY_MS, internal.voices.completeCloneTrainingLifecycle, { cloneJobId: cloneJob._id });
   },
 });
 
 export const completeCloneTrainingLifecycle = internalMutation({
-  args: {
-    cloneJobId: v.id("voiceCloneJobs"),
-  },
+  args: { cloneJobId: v.id("voiceCloneJobs") },
   handler: async (ctx, args) => {
     const cloneJob = await ctx.db.get(args.cloneJobId);
-
-    if (!cloneJob || cloneJob.status !== "training") {
-      return;
-    }
-
+    if (!cloneJob || cloneJob.status !== "training") return;
     const voiceProfile = await ctx.db.get(cloneJob.voiceProfileId);
     const now = Date.now();
-
-    await ctx.db.patch(cloneJob._id, {
-      status: "ready",
-      completedAt: now,
-    });
-
+    await ctx.db.patch(cloneJob._id, { status: "ready", completedAt: now });
     if (voiceProfile) {
       await ctx.db.patch(voiceProfile._id, {
         cloneStatus: "ready",
-        providerVoiceId:
-          voiceProfile.providerVoiceId ??
-          `clone_${String(voiceProfile._id)}_${String(now).slice(-6)}`,
+        providerVoiceId: voiceProfile.providerVoiceId ?? `clone_${String(voiceProfile._id)}_${String(now).slice(-6)}`,
         lastCloneJobAt: now,
         updatedAt: now,
       });
-
       await ctx.db.insert("auditLogs", {
         organizationId: voiceProfile.organizationId,
         actorType: "system",
@@ -694,10 +723,7 @@ export const completeCloneTrainingLifecycle = internalMutation({
         targetType: "voice_profile",
         targetId: voiceProfile._id,
         summary: `Clone training completed for ${voiceProfile.name}.`,
-        metadata: {
-          cloneJobId: cloneJob._id,
-          provider: cloneJob.provider,
-        },
+        metadata: { cloneJobId: cloneJob._id, provider: cloneJob.provider },
         createdAt: now,
       });
     }
@@ -705,46 +731,25 @@ export const completeCloneTrainingLifecycle = internalMutation({
 });
 
 export const beginVoicePreviewGeneration = internalMutation({
-  args: {
-    generationId: v.id("voiceGenerations"),
-  },
+  args: { generationId: v.id("voiceGenerations") },
   handler: async (ctx, args) => {
     const generation = await ctx.db.get(args.generationId);
-
-    if (!generation || generation.status !== "queued") {
-      return;
-    }
-
-    await ctx.db.patch(generation._id, {
-      status: "processing",
-    });
-
-    await ctx.scheduler.runAfter(
-      PREVIEW_PROCESS_DELAY_MS,
-      internal.voices.completeVoicePreviewGeneration,
-      { generationId: generation._id },
-    );
+    if (!generation || generation.status !== "queued") return;
+    await ctx.db.patch(generation._id, { status: "processing" });
+    await ctx.scheduler.runAfter(PREVIEW_PROCESS_DELAY_MS, internal.voices.completeVoicePreviewGeneration, { generationId: generation._id });
   },
 });
 
 export const completeVoicePreviewGeneration = internalMutation({
-  args: {
-    generationId: v.id("voiceGenerations"),
-  },
+  args: { generationId: v.id("voiceGenerations") },
   handler: async (ctx, args) => {
     const generation = await ctx.db.get(args.generationId);
-
-    if (!generation || generation.status !== "processing") {
-      return;
-    }
-
+    if (!generation || generation.status !== "processing") return;
     const voiceProfile = await ctx.db.get(generation.voiceProfileId);
     const now = Date.now();
-    const generatedSeconds = estimateGeneratedSeconds(generation.characterCount);
+    const generatedSeconds = estimateGeneratedSeconds(generation.characterCount, generation.pace);
     const unitCostInr = getVoiceUsageUnitCost(generation.provider);
-    const totalCostInr = Number(
-      (generation.characterCount * unitCostInr).toFixed(2),
-    );
+    const totalCostInr = Number((generation.characterCount * unitCostInr).toFixed(2));
 
     await ctx.db.patch(generation._id, {
       status: "ready",
@@ -766,6 +771,12 @@ export const completeVoicePreviewGeneration = internalMutation({
         voiceProfileId: generation.voiceProfileId,
         provider: generation.provider,
         generationId: generation._id,
+        presetKey: generation.presetKey,
+        creativity: generation.creativity,
+        expressiveness: generation.expressiveness,
+        pace: generation.pace,
+        stability: generation.stability,
+        warmth: generation.warmth,
         generatedSeconds,
       },
     });
@@ -775,7 +786,6 @@ export const completeVoicePreviewGeneration = internalMutation({
         lastPreviewGeneratedAt: now,
         updatedAt: now,
       });
-
       await ctx.db.insert("auditLogs", {
         organizationId: generation.organizationId,
         actorType: "system",
@@ -786,6 +796,7 @@ export const completeVoicePreviewGeneration = internalMutation({
         summary: `Preview generated for ${voiceProfile.name}.`,
         metadata: {
           provider: generation.provider,
+          presetKey: generation.presetKey,
           characterCount: generation.characterCount,
           generatedSeconds,
         },
@@ -798,6 +809,9 @@ export const completeVoicePreviewGeneration = internalMutation({
       voiceProfileId: generation.voiceProfileId,
       generationId: generation._id,
       provider: generation.provider,
+      presetKey: generation.presetKey,
     });
   },
 });
+
+

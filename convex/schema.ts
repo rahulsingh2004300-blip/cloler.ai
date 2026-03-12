@@ -1,6 +1,15 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const themePreset = v.union(
+  v.literal("sales_opener"),
+  v.literal("negotiation"),
+  v.literal("appointment_booking"),
+  v.literal("support_clarity"),
+  v.literal("payment_reminder"),
+  v.literal("local_outreach"),
+);
+
 export default defineSchema({
   organizations: defineTable({
     name: v.string(),
@@ -121,6 +130,13 @@ export default defineSchema({
     defaultForCalls: v.boolean(),
     stockVoiceKey: v.optional(v.string()),
     providerVoiceId: v.optional(v.string()),
+    themePresetKey: themePreset,
+    creativity: v.number(),
+    expressiveness: v.number(),
+    pace: v.number(),
+    stability: v.number(),
+    warmth: v.number(),
+    previewScript: v.optional(v.string()),
     cloneJobRequestedAt: v.optional(v.number()),
     lastCloneJobAt: v.optional(v.number()),
     lastCloneError: v.optional(v.string()),
@@ -188,9 +204,15 @@ export default defineSchema({
       v.literal("sarvam_bulbul_v3"),
       v.literal("custom_preview"),
     ),
+    presetKey: themePreset,
     playbackMode: v.optional(
       v.union(v.literal("browser_tts"), v.literal("stored_audio")),
     ),
+    creativity: v.number(),
+    expressiveness: v.number(),
+    pace: v.number(),
+    stability: v.number(),
+    warmth: v.number(),
     text: v.string(),
     characterCount: v.number(),
     generatedSeconds: v.optional(v.number()),

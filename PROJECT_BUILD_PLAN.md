@@ -354,23 +354,29 @@ Merge gate:
 
 Scope:
 
-- build the true `Resonance`-style custom voice layer.
+- build the true `Resonance`-style voice workspace for stock and cloned calling voices.
 
 Tasks:
 
 - deploy or wire the cloning and TTS service boundary
 - create clone job lifecycle states
+- support stock voice and custom cloned voice modes
+- support uploading or recording reference audio inside the dashboard
+- add theme-based presets such as sales opener, negotiation, appointment booking, support, payment reminder, and local outreach
+- add generation controls for creativity, expressiveness, pace, stability, and warmth
 - support text-to-speech generation with preview audio
-- add waveform or preview experience in dashboard
+- add waveform-style preview and preview history in dashboard
+- save reusable voice preset and script defaults per voice profile
 - meter generated output for billing later
 
 Deliverable:
 
-- uploaded sample can produce playable synthesized output
+- users can create a stock or cloned voice profile, record or upload samples, tune the voice behavior, and generate playable previews from the dashboard
 
 Merge gate:
 
-- at least one voice clone can generate preview audio successfully,
+- at least one voice path can generate preview audio successfully,
+- cloned voice flow can accept reference samples and move through training states,
 - usage is recorded per organization
 
 ### Step 10 - Leads, Contacts, and Campaign Data Foundation
@@ -787,3 +793,5 @@ Proceed from the dashboard-first product path:
 - Step 06 done: dashboard shell
 - next high-value product step: `Step 07 - Voice Workspace and Navigation Modules`
 - after that, move directly into voice upload, cloning, leads, and bulk-calling workflows
+
+
