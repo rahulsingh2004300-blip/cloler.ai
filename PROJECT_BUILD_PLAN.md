@@ -1,4 +1,4 @@
-# cloler.ai Build Plan
+﻿# cloler.ai Build Plan
 
 ## Project Info
 
@@ -9,115 +9,138 @@
   - telephony: [InboundAIVoice](https://github.com/toprmrproducer/InboundAIVoice)
   - voice cloning: [resonance](https://github.com/code-with-antonio/resonance)
 
-## Goal
+## Product Direction
 
-Build a multi-tenant SaaS that lets organizations:
+`cloler.ai` is a dashboard-first SaaS for agencies, solo founders, and operators who want to:
 
-- clone voices from uploaded recordings,
-- run AI-powered inbound and outbound voice calls,
-- manage agents, prompts, knowledge, and call activity from a dashboard,
-- embed a support widget,
-- meter usage and bill customers,
-- support bulk outbound calling with DND-safe Excel/CSV uploads,
-- operate legally and safely in production.
+- clone a business voice from uploaded recordings,
+- generate speech and previews with cloned or stock voices,
+- run inbound and outbound AI calls using platform-managed telephony,
+- launch compliant bulk calling campaigns with DND-safe uploads,
+- monitor leads, calls, bookings, transcripts, and outcomes from one dashboard,
+- receive operational alerts and assistant updates through Telegram,
+- bill customers with pay-as-you-go pricing through Razorpay,
+- keep the unit economics close to the low-cost Indian telephony path.
 
-This plan is inspired by `notes.md`, but updated using the two reference repos you asked to follow:
+Important correction from the earlier roadmap:
 
-- Telephony/call-agent reference: `InboundAIVoice`
-- Voice cloning/TTS reference: `resonance`
-
-The notes are still a strong implementation backbone for the SaaS/dashboard/widget flow, but the telephony path is now explicitly aligned to `InboundAIVoice`, not `Vapi`.
+- the core product is **not** widget-first.
+- the core product is **dashboard-first**.
+- the most important user journey is:
+  - business logs into dashboard,
+  - uploads voice samples,
+  - configures AI calling agent,
+  - imports leads or connects call flows,
+  - monitors calls and outcomes,
+  - receives notifications in Telegram,
+  - pays based on usage.
 
 ## Reference Codebases We Are Cloning
 
 ### 1. Telephony Reference - InboundAIVoice
 
-We will clone the telephony architecture direction from:
+We are cloning the telephony architecture direction from:
 
 - [InboundAIVoice](https://github.com/toprmrproducer/InboundAIVoice)
 
-Observed stack from the repo:
+Observed direction from the repo:
 
-- `Python` agent service
+- `Python` call-agent service
 - `LiveKit Agents` worker runtime
 - `Vobiz` SIP / telephony routing
-- `Sarvam` plugins for STT/TTS
-- `FastAPI` dashboard/config server
-- `Supabase`-style call log / booking / contact storage
-- `Telegram` notifications
-- `cal.com` and `Google Calendar` appointment flows
-- `Coolify/VPS` style self-hosted deployment path
+- `Sarvam` STT/TTS integration
+- `FastAPI` control or ops surface
+- call automation and call dispatch utilities
+- `Telegram` notifications and operator workflow support
+- deployment path designed around self-hosted service control
 
 ### 2. Voice Cloning Reference - Resonance
 
-We will clone the voice-cloning and TTS product patterns from:
+We are cloning the voice-cloning and TTS product direction from:
 
 - [resonance](https://github.com/code-with-antonio/resonance)
 
 Observed direction from the repo:
 
-- `Next.js` app experience for voice cloning and text-to-speech
-- `Chatterbox TTS` for generation / cloning
-- voice library + voice management
-- waveform/audio preview flows
-- billing + usage-metering patterns
+- `Next.js` protected product experience
+- voice library management
+- text-to-speech workflow
+- billing and usage-aware product structure
+- voice upload, preview, and generation patterns
 
-## Key Architecture Decision
+## Core Architecture Decision
 
 - We are **not** using `Vapi`.
-- Telephony will follow an `InboundAIVoice`-style service: `LiveKit + Vobiz + Sarvam + Python/FastAPI`.
-- Voice cloning will follow a `Resonance`-style service: `Chatterbox/Resemble-style cloning + TTS`.
-- Core SaaS control plane can still remain `Next.js + Clerk + Convex`, because that matches your notes and gives us a better multi-tenant app foundation.
-- Telephony operations can use an `InboundAIVoice`-style sidecar service and data model for calls, bookings, recordings, and ops tooling.
-- Bulk outbound uploads must be filtered through DND and suppression checks before any number reaches the calling queue.
-- In MVP, provider accounts are platform-owned. Customers configure behavior and business rules, but they do not bring their own `LiveKit`, `Vobiz`, `Sarvam`, or LLM API keys.
+- We are **not** making the widget the center of the product.
+- We are building a `dashboard-first SaaS` with an `InboundAIVoice`-style telephony sidecar and a `Resonance`-style voice product layer.
+- Telephony follows `LiveKit + Vobiz + Sarvam + Python/FastAPI`.
+- Voice cloning follows a `Resonance`-style `Next.js + voice library + TTS` product model.
+- Core SaaS control plane remains `Next.js + Clerk + Convex`.
+- Provider credentials are platform-managed in MVP and early paid product versions.
+- Customers configure business behavior, agents, voices, lead lists, campaigns, and routing behavior. They do not bring their own `LiveKit`, `Vobiz`, `Sarvam`, or LLM keys.
 
-Important architecture note:
+## Product Surfaces
 
-- `InboundAIVoice` is optimized for low-cost phone calls using stock `Sarvam` voices.
-- `Resonance` is optimized for custom voice cloning.
-- To combine both, we need a `TTS provider abstraction` inside the telephony worker:
-- default path: `Sarvam Bulbul v2` for the cheapest operational calls that best match the `~₹2/min` goal
-- higher-quality stock path: `Sarvam Bulbul v3` when voice quality matters more than cost
-- premium/custom path: `Resonance/Chatterbox` for cloned-voice calls
+### Core Surfaces
 
-Inference:
+These are required for the product we are actually selling:
 
-- the `~₹2/min` target fits the stock `Sarvam` telephony path more naturally than the custom cloned-voice path.
-- to stay closer to that target, the default phone agent should use `Bulbul v2`, while `Bulbul v3` and cloned voices should be treated as premium quality tiers.
-- we should treat cloned-voice live calls as a second benchmark until we test latency and cost.
+- `marketing` site for positioning, pricing, and conversion
+- `dashboard` for agencies, solo founders, and operators
+- `telephony-agent` service for AI calling runtime
+- `voice cloning / TTS` service for cloned voice generation and previews
+- `Telegram` integration for notifications and assistant handoff visibility
 
-## Telephony Cost Target
+### Optional Later Surfaces
+
+These are **not** core to the current product direction and should not drive the roadmap early:
+
+- `widget/embed`
+- `admin`
+
+Reason:
+
+- neither reference repo is centered on a public support widget as the main product,
+- your actual product goal is voice cloning + AI calling + dashboard monitoring + Telegram + billing,
+- widget and admin are useful expansion tracks, but they should not slow down the core agency product.
+
+## Telephony Cost and Pricing Direction
 
 Planning target from your requirements:
 
-- `Vobiz SIP telephony` -> about `₹0.40/min`
-- `Sarvam Bulbul v2 TTS` -> about `₹15 per 10K chars` for the cost-optimized default path
-- `Sarvam Bulbul v3 TTS` -> higher-quality optional path with higher effective per-call cost
-- `Sarvam Saaras v3 STT` -> about `₹20 per 10K chars`
-- `Groq` LLM -> effectively free at early volume target
-- `Coolify/VPS` -> about `₹600/month` fixed
-- target blended cost -> about `₹2/min` when we keep the stock telephony path cost-optimized
-- target 5-minute call -> about `₹10` on the stock low-cost path, not the premium cloned-voice path
+- `Vobiz SIP telephony` -> about `Rs 0.40/min`
+- `Sarvam Bulbul v2 TTS` -> cost-optimized default stock voice path
+- `Sarvam Bulbul v3 TTS` -> higher-quality optional stock voice path
+- `Sarvam Saaras v3 STT` -> speech recognition path
+- `Groq` -> default low-cost reasoning path
+- `Coolify/VPS` -> fixed infra layer
+- target blended stock-call cost -> about `Rs 2/min`
+- target 5-minute stock call -> about `Rs 10`
 
-We will treat these as planning targets unless and until we validate them with live provider accounts.
+Product monetization direction:
 
-In MVP, these are platform-owned costs. Customers are billed through our SaaS pricing and do not need to connect or pay for these provider APIs separately.
+- sell to agencies and solo founders on a `pay-as-you-go` model,
+- use `Razorpay` for wallet top-ups, usage payments, or metered subscription plans,
+- separate reporting for:
+  - stock low-cost calls,
+  - higher-quality stock calls,
+  - cloned-voice calls,
+- keep cloned-voice calling as a premium tier because it is unlikely to match the cheapest stock voice economics at first.
 
 ## Working Assumptions
 
 - Monorepo: `pnpm` + `turborepo`
-- Frontend apps: `marketing`, `dashboard`, `admin`, `widget/embed`
+- Core apps: `marketing`, `dashboard`
+- Optional later apps: `widget`, `admin`
 - Core backend/data: `Convex`
 - Auth/orgs: `Clerk`
-- UI base: `shadcn/ui`, Next.js 15, React 19, Tailwind v4
-- Voice cloning/TTS service: `Resonance`-style `Chatterbox` deployment on `Modal`
-- Cost-optimized stock telephony TTS default: `Sarvam Bulbul v2`
-- Premium telephony TTS options: `Sarvam Bulbul v3` and `Resonance` cloned voice
+- UI base: `shadcn/ui`, Next.js 16, React 19, Tailwind v4
+- Voice cloning/TTS service: `Resonance`-style voice library and generation service, likely using `Modal`
+- Cost-optimized stock telephony path: `Sarvam Bulbul v2`
+- Premium stock telephony path: `Sarvam Bulbul v3`
+- Premium custom voice path: `Resonance`-style cloned voices
 - Telephony service: `InboundAIVoice`-style `Python + LiveKit Agents + Vobiz + Sarvam + FastAPI`
-- Telephony ops data: `Supabase/Postgres-compatible` call-log and booking schema for the telephony service, with selected summaries synced into `Convex`
-- Provider accounts for `LiveKit`, `Vobiz`, `Sarvam`, `Groq/OpenAI`, `Telegram`, and `cal.com` are platform-managed in MVP; customers configure behavior, not credentials
-- Calendar integration: `cal.com` first, `Google Calendar` as supported option
+- Telephony ops data: call logs, contacts, bookings, recordings, suppression lists, bulk-upload jobs, and campaign outcomes
 - Notifications: `Telegram Bot API`
 - Billing: `Razorpay`
 - Deployment: `Vercel` for web apps, `Coolify/VPS` for telephony worker + FastAPI ops UI, hosted `Convex`, hosted `Modal`
@@ -128,14 +151,12 @@ For each step:
 
 1. Create a branch like `codex/step-XX-short-name`
 2. Implement only the scoped work for that step
-3. Run local verification for affected apps/services
+3. Run local verification for affected apps and services
 4. Commit with a focused message
 5. Push branch to GitHub
 6. Open PR
-7. Review and merge into `master`
-8. Tag or note the milestone in project tracking
-
-Each step below is intentionally sized so we can merge incrementally without mixing unrelated risk.
+7. Review and merge into `main`
+8. Note the milestone in project tracking
 
 ## Delivery Phases
 
@@ -143,25 +164,22 @@ Each step below is intentionally sized so we can merge incrementally without mix
 
 Scope:
 
-- finalize the product architecture from the PDF and the two reference repos,
-- define app boundaries and service boundaries,
-- create GitHub repo standards,
-- install base tooling.
+- finalize architecture from the PDF and reference repos,
+- define app and service boundaries,
+- set monorepo standards.
 
 Tasks:
 
 - install and verify `pnpm`
 - initialize `turborepo`
-- scaffold Next.js apps with shared config
-- define service folders for `telephony-agent` and supporting infra
-- add linting, formatting, TypeScript, env conventions
-- define monorepo folders: `apps/`, `packages/`, `convex/`, `services/`
-- create contribution and branching rules
-- document the split between `core SaaS`, `voice cloning`, and `telephony`
+- scaffold Next.js apps and shared config
+- define `apps/`, `packages/`, `convex/`, `services/`
+- create linting, formatting, TypeScript, env conventions
+- document the split between `dashboard`, `voice cloning`, and `telephony-agent`
 
 Deliverable:
 
-- clean monorepo skeleton that runs locally
+- clean monorepo skeleton
 
 Merge gate:
 
@@ -173,24 +191,24 @@ Merge gate:
 
 Scope:
 
-- establish shared UI primitives and app shell patterns.
+- establish shared UI primitives and design language.
 
 Tasks:
 
 - set up `shadcn/ui`
 - create shared `ui` package
-- add base layout primitives, buttons, forms, dialogs, tables
-- define theme tokens, spacing, typography, states
-- create a starter design system for dashboard/admin/widget consistency
+- add base layout primitives, buttons, forms, dialogs, and tables
+- define theme tokens, spacing, typography, and states
+- create shared dashboard and marketing building blocks
 
 Deliverable:
 
-- reusable shared UI package consumed by all apps
+- reusable UI package consumed by product surfaces
 
 Merge gate:
 
 - one shared component imported into at least two apps,
-- no style drift across apps
+- visual consistency established
 
 ### Step 03 - Convex Core Backend Foundation
 
@@ -201,15 +219,14 @@ Scope:
 Tasks:
 
 - create Convex project
-- configure local/dev/prod environments
+- configure local, dev, and prod environments
 - add base schema for organizations, users, usage events, audit logs
-- create reusable auth helpers and data access patterns
-- define sync boundaries between `Convex` and the future telephony service store
-- resolve lint/build issues around Convex integration
+- create auth helpers and data access patterns
+- define sync boundaries between `Convex` and telephony service data
 
 Deliverable:
 
-- working Convex backend wired into the dashboard app
+- working Convex backend wired into dashboard
 
 Merge gate:
 
@@ -226,11 +243,10 @@ Tasks:
 
 - configure Clerk
 - connect Clerk with Convex JWT auth
-- add sign-in/sign-up flows
+- add sign-in and sign-up flows
 - enable organizations
-- create organization selection and onboarding flow
+- create organization selection and onboarding
 - implement auth guards and organization guards
-- enforce active-org requirement in middleware
 
 Deliverable:
 
@@ -246,7 +262,7 @@ Merge gate:
 
 Scope:
 
-- add the operational foundation early.
+- add early operational safety.
 
 Tasks:
 
@@ -254,7 +270,7 @@ Tasks:
 - create test error scenarios
 - standardize env validation
 - define secret handling patterns
-- add structured logging for backend and frontend
+- add structured logging
 
 Deliverable:
 
@@ -277,7 +293,7 @@ Tasks:
 - build sidebar and grouped navigation
 - add `UserButton` and organization switcher
 - scaffold empty pages for major modules
-- implement base responsive behavior
+- implement responsive behavior
 - apply theme polish
 
 Deliverable:
@@ -289,155 +305,176 @@ Merge gate:
 - users can navigate the dashboard without dead ends,
 - layout works on desktop and mobile
 
-### Step 07 - Widget Foundation
+### Step 07 - Voice Workspace and Navigation Modules
 
 Scope:
 
-- create embeddable end-user widget shell.
+- turn the dashboard shell into a product workspace centered on voices and calling.
 
 Tasks:
 
-- build widget layout
-- create header/footer/frame
-- define widget state model
-- create session table and session creation flow
-- build widget auth or contact-start screen
+- define primary dashboard sections for voices, agents, calls, leads, campaigns, billing, and settings
+- create page-level placeholders and module entry points
+- shape the dashboard information architecture around agency workflows, not widget workflows
+- add top-level status cards for voice count, active campaigns, recent calls, and spend
 
 Deliverable:
 
-- widget opens and creates a valid contact session
+- dashboard navigation reflects the actual sellable product
 
 Merge gate:
 
-- widget can initialize and persist a session
+- main user journeys are visible from the dashboard shell,
+- no core product area feels missing from navigation
 
-### Step 08 - Widget Router, Loading, and Validation States
+### Step 08 - Voice Library Data Model and Upload Foundation
 
 Scope:
 
-- make the widget robust before AI features.
+- create the base voice management system.
 
 Tasks:
 
-- add Jotai
-- define widget screens and atoms
-- create screen router
-- build loading, error, and validation screens
-- add Convex functions to validate org and contact session
+- add schema for voice profiles, samples, generations, and voice status
+- create upload flow for reference audio
+- store voice metadata and files
+- build dashboard UI for voice library listing and voice detail
+- prepare background job hooks for cloning and generation
 
 Deliverable:
 
-- widget handles valid, invalid, loading, and error paths gracefully
+- orgs can upload and manage voice assets
 
 Merge gate:
 
-- invalid org/session never reaches conversation UI
+- a voice profile can be created from the dashboard,
+- files and metadata persist correctly per organization
 
-### Step 09 - Conversation Data Model and Basic Inbox
+### Step 09 - Voice Cloning and TTS Generation Pipeline
 
 Scope:
 
-- create the base conversation system used by widget and dashboard.
+- build the true `Resonance`-style custom voice layer.
 
 Tasks:
 
-- add `conversations` schema
-- create core conversation functions
-- build selection/start screen
-- create inbox query functions
-- add widget inbox UI
+- deploy or wire the cloning and TTS service boundary
+- create clone job lifecycle states
+- support text-to-speech generation with preview audio
+- add waveform or preview experience in dashboard
+- meter generated output for billing later
 
 Deliverable:
 
-- conversations can be created, listed, and resumed
+- uploaded sample can produce playable synthesized output
 
 Merge gate:
 
-- a new widget session can create and later re-open a conversation
+- at least one voice clone can generate preview audio successfully,
+- usage is recorded per organization
 
-### Step 10 - Dashboard Inbox and Chat Workspace
+### Step 10 - Leads, Contacts, and Campaign Data Foundation
 
 Scope:
 
-- give operators a real workspace for handling conversations.
+- create the dashboard-side data model for agency calling workflows.
 
 Tasks:
 
-- create conversation layout and panel
-- add dashboard inbox list
-- create chat views for active conversation
-- fix sidebar/default state issues
-- connect dashboard to conversation queries
+- add contacts schema
+- add campaign schema
+- add lead status and outcome model
+- create suppression list and DND result model
+- define relationship between contacts, calls, campaigns, and voice selection
 
 Deliverable:
 
-- operator can browse conversations and open chat threads in dashboard
+- dashboard has a usable foundation for bulk calling and lead monitoring
 
 Merge gate:
 
-- inbox and conversation detail stay in sync
+- leads and campaigns can be created and queried safely per organization
 
-### Step 11 - Internal Telephony Conversation Engine
+### Step 11 - Dashboard Leads Inbox and Contact Workspace
 
 Scope:
 
-- build the agent logic in the same spirit as `InboundAIVoice`, but wired to our SaaS data model.
+- give users a real place to monitor and act on leads.
 
 Tasks:
 
-- model agent instructions, greeting rules, and language presets inspired by `agent.py` and `config.json`
-- integrate platform-managed `Groq` access as the default agent runtime
-- keep `OpenAI` only as an internal fallback or later premium option, not the default cost path
-- do not expose LLM, STT, TTS, or telephony credential setup to end users in MVP
+- create contacts table and lead detail panel
+- add filters for status, campaign, and last outcome
+- add empty-state and no-dead-end flows
+- create operator-ready call and lead monitoring workspace
+
+Deliverable:
+
+- agencies and founders can monitor leads directly from dashboard
+
+Merge gate:
+
+- lead list and detail state stay in sync,
+- contact workflows are usable on desktop and mobile
+
+### Step 12 - Internal Telephony Conversation Engine
+
+Scope:
+
+- build the agent logic in the spirit of `InboundAIVoice`, wired to our SaaS model.
+
+Tasks:
+
+- model instructions, greeting rules, and language presets inspired by `agent.py` and `config.json`
+- integrate platform-managed `Groq` as the default reasoning path
+- keep `OpenAI` only as an internal fallback or premium option later
+- do not expose provider credentials to customers
 - create internal functions for conversation state, tool execution, and transcript storage
-- wire agent replies into conversation and call flows used by the widget, dashboard, and telephony worker
-- add prompt management for internal/admin use
+- add prompt management for internal and tenant-safe use
 
 Deliverable:
 
-- reusable agent logic that can be called by the telephony worker and debugged from internal product surfaces
+- reusable agent logic for the telephony worker and dashboard debug flows
 
 Merge gate:
 
 - agent responses are generated with platform-owned credentials,
-- tenant data stays isolated,
-- no customer credential input is required
+- tenant data stays isolated
 
-### Step 12 - AI Tool Calling and Conversation Controls
+### Step 13 - AI Tool Calling and Workflow Controls
 
 Scope:
 
-- move from simple replies to workflow-aware assistance.
+- move from simple replies to workflow-aware automation.
 
 Tasks:
 
 - add manual status change
 - add tool-based status change
-- implement prompt enhancement function
+- implement prompt enhancement
 - improve operator controls
-- add loading and infinite scroll to chat
+- support richer transcript and state handling
 
 Deliverable:
 
-- AI can update workflow state and operate with richer context
+- AI can update workflow state with auditability
 
 Merge gate:
 
 - status changes are auditable,
 - tool calling does not leak cross-org data
 
-### Step 13 - Knowledge Base and RAG
+### Step 14 - Knowledge Base and RAG
 
 Scope:
 
-- let orgs upload knowledge and use it in AI responses.
+- let organizations upload knowledge and use it during calls.
 
 Tasks:
 
 - add file schema and storage flows
-- create `addFile`, `deleteFile`, `listFiles`
+- create file management functions
 - generate embeddings
-- confirm embedding dimensions and provider compatibility
 - build knowledge base table and upload/delete dialogs
 - create search tool and improve prompts
 
@@ -449,20 +486,18 @@ Merge gate:
 
 - uploaded documents can be indexed and referenced in answers
 
-### Step 14 - Platform Telephony Config and Routing Foundation
+### Step 15 - Platform Telephony Config and Routing Foundation
 
 Scope:
 
-- prepare the `InboundAIVoice`-style telephony stack inside the SaaS without requiring customer API keys.
+- prepare the `InboundAIVoice`-style telephony stack inside the SaaS.
 
 Tasks:
 
 - define org telephony behavior and routing model
-- store platform-owned `LiveKit`, `Vobiz`, `Sarvam`, `Telegram`, `cal.com`, and LLM secrets securely
-- create org settings UI for behavior only: greeting, language, business hours, transfer number, booking rules, and stock voice defaults
-- do not expose provider credential fields to customers in MVP
-- add per-org telephony config overrides inspired by `config.json` / `configs/default.json`
-- define the telephony ops store schema for call logs, contacts, bookings, recordings, suppression lists, and bulk upload jobs
+- store platform-owned `LiveKit`, `Vobiz`, `Sarvam`, `Telegram`, `Razorpay`, and LLM secrets securely
+- create dashboard settings UI for behavior only: greeting, language, business hours, transfer number, booking rules, voice defaults, and campaign defaults
+- add per-org telephony config overrides inspired by `config.json`
 - define how summarized telephony events sync into Convex
 
 Deliverable:
@@ -472,10 +507,9 @@ Deliverable:
 Merge gate:
 
 - platform secret storage is protected,
-- org behavior config resolution is documented and tested,
 - customers never need to bring provider API keys
 
-### Step 15 - InboundAIVoice Telephony Service Clone
+### Step 16 - InboundAIVoice Telephony Service Clone
 
 Scope:
 
@@ -484,138 +518,118 @@ Scope:
 Tasks:
 
 - create `services/telephony-agent` in `Python`
-- install and configure `livekit-agents`, `livekit-api`, `livekit-plugins-sarvam`, `fastapi`, and supporting libs
-- port or reimplement the config loader and language preset model
-- create the agent tool context for call transfer, availability lookup, booking intent, and end-call flows
+- install and configure `livekit-agents`, `livekit-api`, `livekit-plugins-sarvam`, `fastapi`, and support libs
+- port or reimplement config loader and language preset model
+- create tool context for call transfer, availability lookup, booking intent, and end-call flows
 - build `FastAPI` ops endpoints for config, logs, stats, contacts, outbound dispatch, health, and metrics
-- create a browser-demo room flow for internal testing
-- add initial call logging and booking persistence in the telephony ops store
-- wire `Telegram` notifications and `cal.com` / `Google Calendar` helpers
-- connect the worker to platform-managed provider credentials only
+- create browser-demo room flow for internal testing
 
 Deliverable:
 
-- working telephony microservice aligned to the `InboundAIVoice` architecture
+- working telephony microservice aligned to `InboundAIVoice`
 
 Merge gate:
 
 - LiveKit demo room works,
 - FastAPI health endpoint works,
-- outbound dispatch endpoint works in a non-production test path,
-- Telegram dry run succeeds
+- outbound dispatch endpoint works in test mode
 
-### Step 16 - Telephony UX and Tenant Voice Configuration
+### Step 17 - Sarvam Voice Tiers and Cloned-Voice Bridge
 
 Scope:
 
-- expose telephony behavior cleanly inside the SaaS UI and widget.
+- unify stock Sarvam voices and cloned voices behind one telephony-facing abstraction.
 
 Tasks:
 
-- create telephony settings views in dashboard
-- create configuration forms for greeting, business hours, transfer number, language preset, and stock voice selection
-- add public widget settings functions
-- load org telephony config into widget and dashboard flows
-- update selection screen to show stock telephony voice options and language presets
-- add contact screen and callback / escalation UX where needed
+- create TTS provider abstraction with `sarvam` and `resonance` style backends
+- define default stock voice path using `Bulbul v2`
+- define premium stock path using `Bulbul v3`
+- define premium custom path using cloned voices
+- connect dashboard voice selection to the telephony worker config
 
 Deliverable:
 
-- each org can configure how its telephony agent behaves without touching raw service config files or entering provider credentials
+- telephony can choose between stock and cloned voice paths behind one contract
 
 Merge gate:
 
-- widget and dashboard reflect org telephony settings safely,
-- no tenant sees another tenant's telephony config
+- voice provider choice resolves correctly per organization,
+- stock fallback works if cloned voice is unavailable
 
-### Step 17 - Voice Cloning and Resonance-Style TTS Module
-
-Scope:
-
-- build the true custom voice-cloning layer using the `resonance` direction.
-
-Tasks:
-
-- define the voice-cloning service boundary
-- deploy `Chatterbox` / `Resonance`-style TTS on `Modal`
-- create voice sample upload flow
-- create voice metadata schema
-- store sample and voice assets in object storage
-- create TTS API proxy layer
-- add waveform player and voice preview UX
-- add default voice library
-- create a `TTS provider abstraction` with at least `sarvam` and `resonance`
-- meter character and audio usage separately for stock and cloned voices
-
-Deliverable:
-
-- users can create or choose voices and generate speech from text
-
-Merge gate:
-
-- uploaded sample can produce playable synthesized output,
-- usage is recorded per organization,
-- telephony layer can call the selected TTS provider behind a common interface
-
-### Step 18 - Real-Time Telephony, SIP, and Cloned-Voice Bridge
+### Step 18 - Real-Time SIP, Inbound, and Outbound Call Flow
 
 Scope:
 
-- complete the real phone-call flow using `InboundAIVoice` telephony plus the optional cloned-voice path.
+- complete the real phone-call loop.
 
 Tasks:
 
-- configure `Vobiz` SIP trunks and number routing for inbound and outbound flows
-- connect `LiveKit` SIP ingress/egress to the agent worker
-- implement the real-time `STT -> LLM -> TTS` loop with `Sarvam Saaras v3` and `Groq` as the default LLM path
-- keep `OpenAI` only as an optional internal fallback if needed for quality benchmarking
-- use `Sarvam Bulbul v2` as the default low-cost telephony voice path that best fits the `~₹2/min` target
-- keep `Sarvam Bulbul v3` as an optional higher-quality stock voice tier
-- add optional `Resonance/Chatterbox` TTS path when an org selects a custom cloned voice
+- configure `Vobiz` SIP trunks and number routing
+- connect `LiveKit` SIP ingress and egress to the agent worker
+- implement `STT -> LLM -> TTS` loop with `Sarvam Saaras v3` and default `Groq`
 - persist transcript, status, duration, summary, recording reference, and booking outcomes
-- add human-transfer and fallback logic if custom TTS is unavailable or too slow
-- benchmark latency and effective cost against the target `~₹2/min` for the stock voice path
+- add human transfer and fallback logic
+- benchmark latency and effective cost against the `Rs 2/min` stock path target
 
 Deliverable:
 
-- real phone call flow backed by AI, tenant settings, and selectable voice backends
+- real inbound and outbound AI call flow with selectable voice backend
 
 Merge gate:
 
-- one inbound and one outbound test flow succeed end to end with stock `Sarvam` voice,
-- one controlled cloned-voice phone test succeeds if latency is acceptable,
-- fallback to stock telephony voice is proven
+- one inbound and one outbound test succeed end to end with stock Sarvam voice,
+- one controlled cloned-voice test succeeds if latency is acceptable
 
-### Step 19 - Call Logs, Contact Panel, and Live Operations UI
+### Step 19 - Bulk Outbound Uploads and DND-Safe Calling
 
 Scope:
 
-- make calling operationally usable.
+- make bulk calling usable and compliant for agencies.
+
+Tasks:
+
+- create bulk upload flow for `CSV/XLSX` lead sheets
+- validate headers and normalize phone numbers
+- deduplicate rows
+- block DND or suppressed numbers before scheduling calls
+- auto-generate approved and rejected output sheets with row-level reasons
+- queue valid rows into campaign-ready outbound jobs
+
+Deliverable:
+
+- compliant bulk calling preparation flow from dashboard
+
+Merge gate:
+
+- approved and rejected sheets are generated reliably,
+- DND or suppressed numbers never enter the dial queue
+
+### Step 20 - Call Logs, Lead Monitoring, and Telegram Ops
+
+Scope:
+
+- make calling operationally useful for the real customer.
 
 Tasks:
 
 - create call log views
-- create contact panel and related layout
-- show status, transcript, booking state, and outcome metadata
-- support recording references or playback links where allowed
-- add real-time updates where practical
-- surface telephony-store records cleanly inside the SaaS dashboard
-- create bulk outbound upload flow for `CSV/XLSX` contact sheets
-- validate headers, normalize phone numbers, deduplicate rows, and flag bad records
-- block DND or suppressed numbers before scheduling calls
-- auto-generate a cleaned approved sheet and a rejected sheet with reasons so the user can re-download the corrected file
+- create lead and contact detail panels
+- show transcript, booking state, status, duration, and outcomes
+- support recording links where allowed
+- integrate Telegram alerts for call outcomes, failures, transfers, bookings, and campaign milestones
+- support assistant-to-operator monitoring through Telegram messages
 
 Deliverable:
 
-- operators can review and manage call activity from the dashboard, including compliant bulk outbound upload results
+- agencies and solo founders can monitor leads and calls from dashboard and Telegram
 
 Merge gate:
 
-- completed calls appear reliably with searchable metadata
-- bulk upload jobs produce approved and rejected outputs with clear row-level reasons
-- DND or suppressed numbers never enter the dial queue
+- completed calls appear reliably with searchable metadata,
+- Telegram notifications work for key events
 
-### Step 20 - Usage Metering and Billing
+### Step 21 - Usage Metering and Razorpay Billing
 
 Scope:
 
@@ -624,186 +638,152 @@ Scope:
 Tasks:
 
 - finalize billable events: stock telephony minutes, cloned-voice telephony minutes, TTS characters, storage, and premium features
-- bundle platform provider costs into SaaS pricing so customers are not asked to bring their own APIs
-- create subscription schema and functions
-- add UI protection and API protection
+- bundle provider costs into SaaS pricing so customers are not asked to bring APIs
+- create subscription, wallet, or usage ledger schema
 - build billing page
-- integrate Razorpay for subscription and/or prepaid model
-- implement trial quotas and overage logic
-- keep separate cost reporting for `Bulbul v2 stock calls`, `Bulbul v3 stock calls`, and `cloned voice calls`
+- integrate Razorpay for pay-as-you-go charging and top-up or metered workflows
+- implement quotas and overage logic
+- keep separate cost reporting for `Bulbul v2`, `Bulbul v3`, and cloned voice calls
 
 Deliverable:
 
-- usage-aware billing foundation
+- pay-as-you-go billing foundation for agencies and solo founders
 
 Merge gate:
 
 - usage events roll up correctly,
-- billing state gates premium features safely,
-- telephony cost classes are distinguishable in reports
-
-### Step 21 - Notifications, Analytics, and Admin Panel
-
-Scope:
-
-- add internal visibility and operational oversight.
-
-Tasks:
-
-- create admin app layouts and views
-- add organization-level monitoring
-- add usage and payment overviews
-- integrate Telegram alerts for key events
-- add abuse/review workflows for voice or calling issues
-- expose call outcomes and business analytics
-- track telephony KPIs such as booking rate, average duration, escalation rate, cost per call, and DND rejection rate
-
-Deliverable:
-
-- internal team can monitor customers, payments, calls, and incidents
-
-Merge gate:
-
-- admin sees cross-tenant summaries while tenant isolation remains intact in customer apps
+- Razorpay flow works in test mode,
+- premium vs standard usage classes are distinguishable
 
 ### Step 22 - Compliance, Consent, and Audit Readiness
 
 Scope:
 
-- address the legal-sensitive requirements from the PDF before scale.
+- address the legal-sensitive requirements before scale.
 
 Tasks:
 
 - create voice-cloning consent capture
-- add call disclosure messaging support
+- add call disclosure support
 - store consent and audit evidence
-- keep DND/suppression audit logs for bulk uploads and blocked outbound attempts
-- define data retention/deletion workflows
+- keep DND and suppression audit logs for bulk uploads and blocked outbound attempts
+- define retention and deletion workflows
 - add terms, privacy, acceptable-use, and abuse policy surfaces
-- document provider-side TRAI / telephony compliance assumptions
-- add controls for blocking misuse and suspending orgs
-- require bulk outbound imports to pass DND checks and regenerate corrected Excel/CSV outputs when rows are rejected
+- document provider-side TRAI and telephony compliance assumptions
 
 Deliverable:
 
-- product has enforceable compliance workflows, not just policy text
+- enforceable compliance workflows
 
 Merge gate:
 
 - audit trail exists for critical actions,
 - consent capture is visible in user flows
 
-### Step 23 - Embed Script and Distribution
+### Step 23 - Optional Public Widget and Embed Script
 
 Scope:
 
-- make widget deployment easy for customers.
+- add a widget only if we later need public website lead capture.
 
 Tasks:
 
-- create `embed` app
-- create `embed.ts` script
-- create minified production build
-- test external-site embedding
-- document installation snippet for customers
+- create `widget` or `embed` app only after core dashboard product is stable
+- create lightweight embed script
+- support contact capture or callback request entry
+- document installation snippet
 
 Deliverable:
 
-- lightweight production embed script that loads the widget on customer sites
+- optional public-facing entry layer for customer websites
 
 Merge gate:
 
-- script loads reliably on a separate test site
+- script loads on a separate test site,
+- widget does not complicate the core dashboard product
 
-### Step 24 - Production Deployment and Release Hardening
+### Step 24 - Optional Admin Surface and Production Hardening
 
 Scope:
 
-- ship the stack in a production-ready way.
+- add platform-internal tooling only after the customer product is solid.
 
 Tasks:
 
-- deploy marketing, dashboard, admin, and widget apps on `Vercel`
-- deploy `Convex` production backend
-- deploy `Modal` TTS service
-- deploy `telephony-agent` worker and `FastAPI` ops UI on `Coolify/VPS`
-- configure domains, SSL, DNS, SIP/webhook endpoints, and monitoring
-- run smoke tests across web, widget, cloned voice TTS, and live calls
-- finalize CI/CD and environment segregation
+- create internal admin views for cross-tenant monitoring
+- add payment and usage oversight
+- add abuse and compliance review tools
+- finalize deployment and CI/CD hardening
+- deploy marketing and dashboard on `Vercel`
+- deploy `Convex`, `Modal`, and `telephony-agent` production services
+- configure domains, DNS, SSL, SIP endpoints, and monitoring
+- run final smoke tests across cloning, dashboard, bulk calling, Telegram, billing, and live calls
 
 Deliverable:
 
-- first production-ready MVP release
+- production-ready launch candidate
 
 Merge gate:
 
-- full smoke test passes on live infrastructure
+- full smoke test passes on live infrastructure,
+- internal admin tooling is optional but safe
 
 ## Recommended Merge Sequence
 
-If we want the safest build order, I recommend:
+For the safest build order:
 
-1. Steps 01-06 for platform foundation
-2. Steps 07-13 for widget, inbox, AI conversation core, and knowledge base
-3. Steps 14-16 for telephony config and the `InboundAIVoice` service clone
-4. Steps 17-18 for `Resonance` voice cloning and the cloned-voice telephony bridge
-5. Steps 19-24 for operations, billing, admin, compliance, embed, and deployment
+1. Steps 01-06 for platform foundation and dashboard shell
+2. Steps 07-11 for voice workspace, cloning foundation, leads, and dashboard monitoring
+3. Steps 12-18 for agent logic, telephony config, telephony service clone, and real calls
+4. Steps 19-22 for bulk calling, Telegram ops, billing, and compliance
+5. Steps 23-24 only if we need widget embed or internal admin expansion
 
-## Suggested MVP Cuts
+## Suggested Launch Cuts
 
-If we need staged MVPs:
+If we need staged launches:
 
-- Stop after Step 16 for a low-cost `InboundAIVoice`-style telephony SaaS with stock voices
-- Stop after Step 18 for the first true `cloned voice + phone call` MVP
-- Stop after Step 24 for the full launch candidate
+- Stop after Step 11 for a voice-cloning plus lead-management beta
+- Stop after Step 18 for a true cloned-voice and stock-voice calling product
+- Stop after Step 22 for the main commercial launch
+- Treat Steps 23-24 as optional expansion tracks, not launch blockers
 
-## What Notes.md Already Covers Well
+## What Notes.md Still Covers Well
 
-The existing notes are strongest for:
+The notes remain strongest for:
 
 - monorepo setup,
 - Convex + Clerk foundation,
 - organizations and auth guards,
 - Sentry,
-- dashboard and widget UI,
-- conversations and inbox flows,
+- dashboard UI,
 - AI agent and tool calling,
 - knowledge base and embeddings,
-- widget customization,
 - subscriptions,
-- embed script,
 - deployment basics.
 
-## What Changed From The Previous Plan
+## What Changed In This Cleaned-Up Plan
 
-The biggest changes are:
+The biggest cleanups are:
 
-- removed `Vapi` from the roadmap entirely
-- removed any customer bring-your-own-API assumption for telephony, STT, TTS, and LLM in MVP
-- replaced telephony assumptions with `InboundAIVoice` architecture
-- added `LiveKit + Vobiz + Sarvam + Python/FastAPI` explicitly
-- added `cal.com`, `Google Calendar`, `Telegram`, and `Supabase-style` telephony ops flows
-- added DND-safe bulk calling uploads with automatic approved/rejected Excel or CSV regeneration
-- added a `TTS provider abstraction` so `Resonance` cloned voices can plug into the call stack
-- separated `stock low-cost voice calling` from `custom cloned-voice calling` in cost and implementation planning
-- changed deployment strategy for telephony to `Coolify/VPS`
-
-## What The PDF Still Adds Beyond Notes.md
-
-The PDF still adds important scope beyond the repo-inspired build notes:
-
-- broader SaaS packaging and launch strategy,
-- admin operations and analytics,
-- Razorpay-specific billing direction,
-- India-focused compliance, consent, and data governance,
-- production hosting and domain strategy.
+- removed `widget` as a core product dependency
+- moved `admin` out of the main build path
+- re-centered the product around `dashboard + voice cloning + telephony + Telegram + billing`
+- made the roadmap better match `resonance` and `InboundAIVoice`
+- added explicit agency and solo-founder workflow focus
+- elevated `bulk calling + DND-safe uploads` as a first-class product capability
+- elevated `Razorpay pay-as-you-go billing` as a core commercial requirement
+- kept `Sarvam` stock voice tiers and `cloned voice` tiers clearly separated in economics and product structure
 
 ## Repository State
 
-- This repository was cloned into `D:\cloler.ai` from [GitHub](https://github.com/rahulsingh2004300-blip/cloler.ai.git).
-- The remote repository is currently empty, so this plan file is the first project artifact in the repo.
-- The next work after this file should begin with Step 01 in a feature branch such as `codex/step-01-foundation`.
+- This repository lives at `D:\cloler.ai`
+- The active implementation should follow this cleaned-up roadmap from here onward
+- `widget` and `admin` can remain in the repo as optional later surfaces, but they should not drive near-term delivery decisions
 
 ## Recommended Next Build Step
 
-Start with Step 01 immediately and keep telephony and voice cloning as separate service tracks from day one. That separation will help us clone the two reference repos cleanly without forcing the whole SaaS app into a single backend style too early.
+Proceed from the dashboard-first product path:
+
+- Step 06 done: dashboard shell
+- next high-value product step: `Step 07 - Voice Workspace and Navigation Modules`
+- after that, move directly into voice upload, cloning, leads, and bulk-calling workflows
