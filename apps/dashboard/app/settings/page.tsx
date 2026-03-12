@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,14 +7,23 @@ export default async function SettingsPage() {
 
   return (
     <DashboardShell
-      description="Organization-level defaults and operating preferences now have a dedicated shell route in the dashboard."
-      title="Workspace settings"
+      description="Manage organization defaults and integrations."
+      title="Settings"
     >
       <DashboardPlaceholder
-        badge="Settings"
-        description="Step 6 reserves this space for organization defaults, hours, routing, and policy-level controls."
-        highlights={["Org defaults", "Routing rules", "Operational policies"]}
-        title="Settings route is in place"
+        checklist={[
+          "Organization defaults pending",
+          "Telegram settings pending",
+          "Routing rules pending",
+        ]}
+        description="This area will hold default configuration for the workspace."
+        highlights={[
+          "Voice defaults",
+          "Hours and routing",
+          "Telegram",
+          "Policies",
+        ]}
+        title="Workspace settings"
       />
     </DashboardShell>
   );

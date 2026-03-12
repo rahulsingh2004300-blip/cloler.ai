@@ -1,8 +1,18 @@
+export type DashboardIcon =
+  | "home"
+  | "voice"
+  | "spark"
+  | "leads"
+  | "campaign"
+  | "phone"
+  | "wallet"
+  | "settings";
+
 export type DashboardNavItem = {
   href: string;
   label: string;
-  shortLabel: string;
   description: string;
+  icon: DashboardIcon;
 };
 
 export type DashboardNavGroup = {
@@ -17,54 +27,60 @@ export const dashboardNavGroups: DashboardNavGroup[] = [
       {
         href: "/",
         label: "Overview",
-        shortLabel: "OV",
-        description: "Organization status and usage",
+        description: "Live activity, spend, and rollout status",
+        icon: "home",
+      },
+      {
+        href: "/voices",
+        label: "Voices",
+        description: "Recorded samples, clone jobs, and previews",
+        icon: "voice",
       },
       {
         href: "/agents",
         label: "Agents",
-        shortLabel: "AG",
-        description: "Prompts, voice behavior, and guardrails",
-      },
-      {
-        href: "/knowledge",
-        label: "Knowledge",
-        shortLabel: "KB",
-        description: "Files, retrieval, and context sources",
+        description: "Prompt behavior, tone, and guardrails",
+        icon: "spark",
       },
     ],
   },
   {
-    label: "Operations",
+    label: "Outbound",
     items: [
+      {
+        href: "/leads",
+        label: "Leads",
+        description: "Qualified contacts and follow-up state",
+        icon: "leads",
+      },
+      {
+        href: "/campaigns",
+        label: "Campaigns",
+        description: "Bulk calling batches and queue health",
+        icon: "campaign",
+      },
       {
         href: "/calls",
         label: "Calls",
-        shortLabel: "CL",
-        description: "Live activity, logs, and telephony flow",
-      },
-      {
-        href: "/contacts",
-        label: "Contacts",
-        shortLabel: "CT",
-        description: "Leads, sessions, and outbound readiness",
+        description: "Live queue, outcomes, and transcripts",
+        icon: "phone",
       },
     ],
   },
   {
-    label: "Revenue",
+    label: "Business",
     items: [
       {
         href: "/billing",
         label: "Billing",
-        shortLabel: "BL",
-        description: "Usage, plans, and payment state",
+        description: "Usage, wallet state, and Razorpay readiness",
+        icon: "wallet",
       },
       {
         href: "/settings",
         label: "Settings",
-        shortLabel: "ST",
-        description: "Organization defaults and platform controls",
+        description: "Organization defaults, routing, and Telegram",
+        icon: "settings",
       },
     ],
   },

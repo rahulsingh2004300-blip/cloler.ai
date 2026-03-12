@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,14 +7,23 @@ export default async function AgentsPage() {
 
   return (
     <DashboardShell
-      description="Shape how each organization's assistant sounds, responds, and stays within safe operating boundaries."
-      title="Agent configuration"
+      description="Configure assistant behavior and defaults."
+      title="Agents"
     >
       <DashboardPlaceholder
-        badge="Agents"
-        description="This module is intentionally light in Step 6. The shell is ready for prompt presets, language defaults, and voice behavior settings in later steps."
-        highlights={["Prompt presets", "Greeting rules", "Voice defaults"]}
-        title="Navigation-ready agent workspace"
+        checklist={[
+          "Prompt editor pending",
+          "Behavior controls pending",
+          "Fallback logic pending",
+        ]}
+        description="This area will hold prompt, language, and routing defaults."
+        highlights={[
+          "Prompt presets",
+          "Tone settings",
+          "Language rules",
+          "Fallback flow",
+        ]}
+        title="Agent configuration"
       />
     </DashboardShell>
   );

@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,14 +7,23 @@ export default async function BillingPage() {
 
   return (
     <DashboardShell
-      description="Usage and billing now have a stable destination in the shell, which makes later monetization work easier to drop in."
-      title="Billing and usage"
+      description="Track usage and billing state."
+      title="Billing"
     >
       <DashboardPlaceholder
-        badge="Billing"
-        description="The billing route is ready for plan details, usage rollups, and payment controls when the billing step begins."
-        highlights={["Usage rollups", "Plan state", "Payment actions"]}
-        title="Revenue module is queued"
+        checklist={[
+          "Usage ledger pending",
+          "Payment actions pending",
+          "Cost breakdown pending",
+        ]}
+        description="This area will show usage, wallet state, and billing actions."
+        highlights={[
+          "Usage summary",
+          "Balance state",
+          "Payment actions",
+          "Cost classes",
+        ]}
+        title="Billing and usage"
       />
     </DashboardShell>
   );

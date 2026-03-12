@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,14 +7,23 @@ export default async function KnowledgePage() {
 
   return (
     <DashboardShell
-      description="Keep the retrieval and knowledge surfaces discoverable now so Step 13 can land without another layout rewrite."
-      title="Knowledge base"
+      description="Manage knowledge sources for the assistant."
+      title="Knowledge"
     >
       <DashboardPlaceholder
-        badge="Knowledge"
-        description="Step 6 only prepares the route and shell. Upload, indexing, and RAG-specific controls come later."
-        highlights={["File library", "Embedding pipeline", "Retrieval settings"]}
-        title="Knowledge route is scaffolded"
+        checklist={[
+          "File library pending",
+          "Embedding pipeline pending",
+          "Retrieval settings pending",
+        ]}
+        description="This area will hold files, indexing state, and knowledge controls."
+        highlights={[
+          "File library",
+          "Index status",
+          "Retrieval rules",
+          "Source visibility",
+        ]}
+        title="Knowledge base"
       />
     </DashboardShell>
   );
