@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { validateWidgetEnv } from "../env";
 import "./globals.css";
+
+validateWidgetEnv();
 
 export const metadata: Metadata = {
   title: "Widget preview | cloler.ai",

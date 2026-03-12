@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
+import { validateMarketingEnv } from "../env";
 import "./globals.css";
+
+validateMarketingEnv();
 
 export const metadata: Metadata = {
   title: "Marketing surface | cloler.ai",
