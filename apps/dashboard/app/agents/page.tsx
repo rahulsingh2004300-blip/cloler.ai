@@ -7,14 +7,24 @@ export default async function AgentsPage() {
 
   return (
     <DashboardShell
-      description="Shape how each organization's assistant sounds, responds, and stays within safe operating boundaries."
-      title="Agent configuration"
+      description="Define how the assistant speaks, when it escalates, and which voice path it should use in live calls."
+      title="Agent behavior"
     >
       <DashboardPlaceholder
         badge="Agents"
-        description="This module is intentionally light in Step 6. The shell is ready for prompt presets, language defaults, and voice behavior settings in later steps."
-        highlights={["Prompt presets", "Greeting rules", "Voice defaults"]}
-        title="Navigation-ready agent workspace"
+        checklist={[
+          "Prompt presets are queued",
+          "Language defaults stay tenant-safe",
+          "Fallback behavior is planned before live calls",
+        ]}
+        description="This workspace will hold the configuration that connects prompts, greetings, and voice defaults to real campaigns."
+        highlights={[
+          "System prompt presets",
+          "Greeting and tone controls",
+          "Transfer and fallback logic",
+          "Language and compliance rules",
+        ]}
+        title="Assistant configuration stays operational"
       />
     </DashboardShell>
   );

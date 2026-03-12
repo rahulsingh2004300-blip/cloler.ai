@@ -7,14 +7,24 @@ export default async function BillingPage() {
 
   return (
     <DashboardShell
-      description="Usage and billing now have a stable destination in the shell, which makes later monetization work easier to drop in."
+      description="Track usage, wallet state, and pay-as-you-go readiness without asking customers to bring their own provider accounts."
       title="Billing and usage"
     >
       <DashboardPlaceholder
         badge="Billing"
-        description="The billing route is ready for plan details, usage rollups, and payment controls when the billing step begins."
-        highlights={["Usage rollups", "Plan state", "Payment actions"]}
-        title="Revenue module is queued"
+        checklist={[
+          "Usage ledger lands with Razorpay work",
+          "Stock versus cloned voice classes stay separate",
+          "Operator spending summary comes first",
+        ]}
+        description="This module is where usage, top-ups, and pricing visibility will be shaped into a customer-ready billing surface."
+        highlights={[
+          "Usage summary",
+          "Wallet or balance state",
+          "Razorpay actions",
+          "Cost class breakdown",
+        ]}
+        title="Billing stays close to real usage"
       />
     </DashboardShell>
   );

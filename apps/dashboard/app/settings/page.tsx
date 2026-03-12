@@ -7,14 +7,24 @@ export default async function SettingsPage() {
 
   return (
     <DashboardShell
-      description="Organization-level defaults and operating preferences now have a dedicated shell route in the dashboard."
+      description="Keep routing, organization defaults, and Telegram behavior in one place so the telephony worker can stay platform-managed."
       title="Workspace settings"
     >
       <DashboardPlaceholder
         badge="Settings"
-        description="Step 6 reserves this space for organization defaults, hours, routing, and policy-level controls."
-        highlights={["Org defaults", "Routing rules", "Operational policies"]}
-        title="Settings route is in place"
+        checklist={[
+          "Org defaults land here",
+          "Telegram connector settings follow",
+          "Routing policies connect to telephony config",
+        ]}
+        description="This module will hold organization-level defaults for voice selection, hours, routing, booking, and notification behavior."
+        highlights={[
+          "Voice defaults",
+          "Business hours and routing",
+          "Telegram notifications",
+          "Compliance preferences",
+        ]}
+        title="Operational defaults have a stable home"
       />
     </DashboardShell>
   );

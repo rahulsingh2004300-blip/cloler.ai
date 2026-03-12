@@ -7,14 +7,24 @@ export default async function CallsPage() {
 
   return (
     <DashboardShell
-      description="This shell keeps telephony operations one click away once call logs, routing, and live activity begin landing."
+      description="Keep live queue, transcripts, and call outcomes one click away once telephony data starts landing from the worker."
       title="Call operations"
     >
       <DashboardPlaceholder
         badge="Calls"
-        description="Step 6 makes the route available with a stable layout. The real log table, live status, and transcript views arrive in the telephony phases."
-        highlights={["Live queue", "Call logs", "Outcome timeline"]}
-        title="Operations route is ready"
+        checklist={[
+          "Route is live",
+          "Telephony feed plugs in later",
+          "Transcript and summary panels follow",
+        ]}
+        description="This is the eventual operations hub for live call activity, call history, and escalations."
+        highlights={[
+          "Live queue",
+          "Call log table",
+          "Outcome timeline",
+          "Transcript drawer",
+        ]}
+        title="Call monitoring shell is ready"
       />
     </DashboardShell>
   );

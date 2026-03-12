@@ -7,8 +7,8 @@ export default async function HomePage() {
 
   return (
     <DashboardShell
-      description="Navigate the authenticated workspace, inspect onboarding status, and keep the core tenant surface ready for the deeper modules that land next."
-      title="Dashboard overview"
+      description="Run cloned-voice calling, monitor lead flow, and keep Telegram and billing operations close without digging through filler screens."
+      title="Voice calling command center"
     >
       <WorkspaceOverview />
     </DashboardShell>
