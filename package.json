@@ -11,6 +11,8 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "env:check": "node ./scripts/validate-env.mjs",
+    "sentry:setup": "node ./scripts/setup-sentry.mjs",
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "convex:dev": "convex dev",
@@ -29,3 +31,5 @@
     "typescript-eslint": "^8.57.0"
   }
 }
+
+

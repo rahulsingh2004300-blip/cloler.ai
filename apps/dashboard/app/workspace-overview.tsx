@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@cloler/ui";
+import { createLogger, serializeError } from "@cloler/observability";
 import {
   OrganizationSwitcher,
   UserButton,
@@ -27,6 +28,8 @@ import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useState } from "react";
 
+const logger = createLogger("@cloler/dashboard/workspace-overview");
+
 export function WorkspaceOverview() {
   const { isLoaded: authLoaded, orgId, orgSlug } = useAuth();
   const { isLoaded: userLoaded, user } = useUser();
@@ -37,7 +40,6 @@ export function WorkspaceOverview() {
   const organizationSlug = orgSlug ?? undefined;
   const viewerEmail =
     user?.primaryEmailAddress?.emailAddress ?? user?.emailAddresses[0]?.emailAddress;
-  const viewerName = user?.fullName ?? user?.username ?? undefined;
 
   const overviewArgs:
     | "skip"
@@ -56,14 +58,14 @@ export function WorkspaceOverview() {
     setStatus("Setting up workspace...");
 
     try {
-      await ensureWorkspaceForViewer({
-        organizationSlug,
-        organizationName: organization?.name,
-        viewerEmail,
-        viewerName,
-      });
+      await ensureWorkspaceForViewer({ organizationSlug, organizationName: organization?.name });
       setStatus("Workspace ready.");
     } catch (error) {
+      logger.error("Failed to initialize organization workspace.", {
+        error: serializeError(error),
+        organizationSlug,
+        orgId,
+      });
       setStatus(error instanceof Error ? error.message : "Setup failed.");
     }
   };
@@ -131,11 +133,18 @@ export function WorkspaceOverview() {
               <p>Organization: {organization?.name ?? organizationSlug ?? orgId}</p>
               <p>Status: {overview?.status ?? "loading"}</p>
             </div>
-            {overview?.status !== "ready" ? (
-              <Button className="w-fit" onClick={handleWorkspaceSetup} type="button">
-                Initialize organization workspace
-              </Button>
-            ) : null}
+            <div className="flex flex-wrap items-center gap-3">
+              {overview?.status !== "ready" ? (
+                <Button className="w-fit" onClick={handleWorkspaceSetup} type="button">
+                  Initialize organization workspace
+                </Button>
+              ) : null}
+              {process.env.NODE_ENV !== "production" ? (
+                <Button asChild type="button" variant="outline">
+                  <Link href="/monitoring-test">Open monitoring test</Link>
+                </Button>
+              ) : null}
+            </div>
             {status ? <p className="text-sm text-muted-foreground">{status}</p> : null}
           </CardContent>
         </Card>
@@ -174,4 +183,5 @@ export function WorkspaceOverview() {
     </main>
   );
 }
+
 

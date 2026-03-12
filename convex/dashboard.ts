@@ -12,6 +12,9 @@ import {
   listRecentUsageEvents,
 } from "./lib/organizationQueries";
 import { TELEPHONY_SYNC_BOUNDARIES } from "./lib/syncBoundaries";
+import { createConvexLogger } from "./lib/logger";
+
+const logger = createConvexLogger("dashboard");
 
 function normalizeSlug(value?: string) {
   const trimmed = value?.trim().toLowerCase();
@@ -41,6 +44,10 @@ export const getWorkspaceOverview = query({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
+      logger.warn("workspace_overview_unauthorized", {
+        organizationSlug: args.organizationSlug,
+      });
+
       return {
         status: "unauthorized" as const,
         syncBoundaries: TELEPHONY_SYNC_BOUNDARIES,
@@ -53,6 +60,10 @@ export const getWorkspaceOverview = query({
 
     if (!viewerContext) {
       const { organizationSlug } = resolveIdentityOrganization(identity);
+
+      logger.info("workspace_overview_needs_onboarding", {
+        organizationSlug: organizationSlug ?? args.organizationSlug ?? null,
+      });
 
       return {
         status: "needs_onboarding" as const,
@@ -147,6 +158,7 @@ export const ensureWorkspaceForViewer = mutation({
     const identity = await ctx.auth.getUserIdentity();
 
     if (!identity) {
+      logger.warn("workspace_initialize_unauthorized");
       throw new Error("Authentication required.");
     }
 
@@ -295,6 +307,12 @@ export const ensureWorkspaceForViewer = mutation({
       createdAt: now,
     });
 
+    logger.info("workspace_initialized", {
+      clerkUserId,
+      organizationId: organization._id,
+      organizationSlug: organization.slug,
+    });
+
     return {
       organizationId: organization._id,
       organizationSlug: organization.slug,
@@ -303,3 +321,5 @@ export const ensureWorkspaceForViewer = mutation({
     };
   },
 });
+
+
