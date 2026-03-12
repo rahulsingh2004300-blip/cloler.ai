@@ -1,17 +1,16 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { DashboardShell } from "./dashboard-shell";
+import { requireDashboardSession } from "./require-dashboard-session";
 import { WorkspaceOverview } from "./workspace-overview";
 
 export default async function HomePage() {
-  const { userId, orgId } = await auth();
+  await requireDashboardSession();
 
-  if (!userId) {
-    redirect("/sign-in");
-  }
-
-  if (!orgId) {
-    redirect("/org-selection");
-  }
-
-  return <WorkspaceOverview />;
+  return (
+    <DashboardShell
+      description="Navigate the authenticated workspace, inspect onboarding status, and keep the core tenant surface ready for the deeper modules that land next."
+      title="Dashboard overview"
+    >
+      <WorkspaceOverview />
+    </DashboardShell>
+  );
 }
