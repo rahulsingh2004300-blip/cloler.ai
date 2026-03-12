@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,24 +7,23 @@ export default async function AgentsPage() {
 
   return (
     <DashboardShell
-      description="Define how the assistant speaks, when it escalates, and which voice path it should use in live calls."
-      title="Agent behavior"
+      description="Configure assistant behavior and defaults."
+      title="Agents"
     >
       <DashboardPlaceholder
-        badge="Agents"
         checklist={[
-          "Prompt presets are queued",
-          "Language defaults stay tenant-safe",
-          "Fallback behavior is planned before live calls",
+          "Prompt editor pending",
+          "Behavior controls pending",
+          "Fallback logic pending",
         ]}
-        description="This workspace will hold the configuration that connects prompts, greetings, and voice defaults to real campaigns."
+        description="This area will hold prompt, language, and routing defaults."
         highlights={[
-          "System prompt presets",
-          "Greeting and tone controls",
-          "Transfer and fallback logic",
-          "Language and compliance rules",
+          "Prompt presets",
+          "Tone settings",
+          "Language rules",
+          "Fallback flow",
         ]}
-        title="Assistant configuration stays operational"
+        title="Agent configuration"
       />
     </DashboardShell>
   );

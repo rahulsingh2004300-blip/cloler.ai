@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,24 +7,23 @@ export default async function LeadsPage() {
 
   return (
     <DashboardShell
-      description="Monitor contact quality, follow-up state, and the records that will feed outbound calling and Telegram alerts."
-      title="Leads inbox"
+      description="Track contacts and follow-up state."
+      title="Leads"
     >
       <DashboardPlaceholder
-        badge="Leads"
         checklist={[
-          "Lead model arrives with campaign data",
-          "Status filters follow immediately after",
-          "Detail panel will connect transcripts later",
+          "Lead table pending",
+          "Filters pending",
+          "Detail drawer pending",
         ]}
-        description="This route replaces the earlier generic contact placeholder and keeps the focus on sales and calling workflows."
+        description="This area becomes the lead inbox for calling workflows."
         highlights={[
-          "Lead table and filters",
-          "Outcome and status columns",
-          "Recent interaction history",
-          "Campaign assignment",
+          "Lead table",
+          "Filters",
+          "Status history",
+          "Campaign link",
         ]}
-        title="Leads become the daily operator inbox"
+        title="Lead workspace"
       />
     </DashboardShell>
   );

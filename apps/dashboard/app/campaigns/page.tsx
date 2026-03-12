@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,24 +7,23 @@ export default async function CampaignsPage() {
 
   return (
     <DashboardShell
-      description="Prepare bulk calling waves, monitor queue health, and separate approved rows from blocked or DND-rejected contacts."
-      title="Campaign control"
+      description="Prepare and monitor outbound calling batches."
+      title="Campaigns"
     >
       <DashboardPlaceholder
-        badge="Campaigns"
         checklist={[
-          "Bulk upload review lands here",
-          "Queue status follows after lead import",
-          "Campaign analytics will connect to billing",
+          "Upload review pending",
+          "Queue status pending",
+          "Campaign analytics pending",
         ]}
-        description="This module will become the launch surface for agency bulk calling, suppression checks, and schedule control."
+        description="This area will control bulk calling jobs and queue health."
         highlights={[
-          "Upload job review",
-          "Approved versus rejected rows",
-          "Queue and dispatch status",
-          "Campaign performance summary",
+          "Upload jobs",
+          "Approved rows",
+          "Rejected rows",
+          "Dispatch queue",
         ]}
-        title="Campaign workspace is reserved for outbound execution"
+        title="Campaign control"
       />
     </DashboardShell>
   );

@@ -1,4 +1,4 @@
-import { DashboardPlaceholder } from "../dashboard-placeholder";
+﻿import { DashboardPlaceholder } from "../dashboard-placeholder";
 import { DashboardShell } from "../dashboard-shell";
 import { requireDashboardSession } from "../require-dashboard-session";
 
@@ -7,24 +7,23 @@ export default async function SettingsPage() {
 
   return (
     <DashboardShell
-      description="Keep routing, organization defaults, and Telegram behavior in one place so the telephony worker can stay platform-managed."
-      title="Workspace settings"
+      description="Manage organization defaults and integrations."
+      title="Settings"
     >
       <DashboardPlaceholder
-        badge="Settings"
         checklist={[
-          "Org defaults land here",
-          "Telegram connector settings follow",
-          "Routing policies connect to telephony config",
+          "Organization defaults pending",
+          "Telegram settings pending",
+          "Routing rules pending",
         ]}
-        description="This module will hold organization-level defaults for voice selection, hours, routing, booking, and notification behavior."
+        description="This area will hold default configuration for the workspace."
         highlights={[
           "Voice defaults",
-          "Business hours and routing",
-          "Telegram notifications",
-          "Compliance preferences",
+          "Hours and routing",
+          "Telegram",
+          "Policies",
         ]}
-        title="Operational defaults have a stable home"
+        title="Workspace settings"
       />
     </DashboardShell>
   );

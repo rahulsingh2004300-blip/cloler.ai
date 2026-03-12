@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { Badge, Button, Card, CardContent, Separator, cn } from "@cloler/ui";
+import { Button, Card, CardContent, Separator, cn } from "@cloler/ui";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -87,6 +87,27 @@ function DashboardNavIcon({ icon }: { icon: DashboardIcon }) {
   }
 }
 
+function SidebarToggle({
+  collapsed,
+  onClick,
+}: {
+  collapsed: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button onClick={onClick} size="icon" type="button" variant="outline">
+      <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+        {collapsed ? (
+          <path d="m9 5 6 7-6 7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        ) : (
+          <path d="m15 5-6 7 6 7" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+        )}
+      </svg>
+      <span className="sr-only">Toggle sidebar</span>
+    </Button>
+  );
+}
+
 export function DashboardShell({
   title,
   description,
@@ -94,6 +115,7 @@ export function DashboardShell({
 }: DashboardShellProps) {
   const pathname = usePathname();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const activeItem = useMemo(() => {
     for (const group of dashboardNavGroups) {
@@ -109,33 +131,40 @@ export function DashboardShell({
 
   const nav = (
     <div className="flex h-full flex-col">
-      <div className="space-y-4 px-5 py-5">
+      <div className={cn("space-y-4 px-4 py-4", sidebarCollapsed && "px-3") }>
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-medium tracking-[0.32em] text-muted-foreground uppercase">
+          <div className={cn(sidebarCollapsed && "hidden") }>
+            <p className="text-xs font-semibold tracking-[0.26em] text-slate-500 uppercase">
               cloler.ai
             </p>
-            <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
-              Calling workspace
+            <h2 className="mt-1 text-lg font-semibold tracking-tight text-slate-950">
+              Dashboard
             </h2>
           </div>
-          <Badge className="w-fit" variant="secondary">
-            Step 7
-          </Badge>
+          {sidebarCollapsed ? (
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-950">
+              C
+            </div>
+          ) : null}
+          <div className="hidden xl:block">
+            <SidebarToggle
+              collapsed={sidebarCollapsed}
+              onClick={() => setSidebarCollapsed((value) => !value)}
+            />
+          </div>
         </div>
-        <p className="text-sm leading-6 text-muted-foreground">
-          Voice cloning, campaigns, calling, and billing in one operator console.
-        </p>
       </div>
 
       <Separator />
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5">
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
         {dashboardNavGroups.map((group) => (
           <div className="space-y-2" key={group.label}>
-            <p className="px-2 text-[11px] font-medium tracking-[0.28em] text-muted-foreground uppercase">
-              {group.label}
-            </p>
+            {!sidebarCollapsed ? (
+              <p className="px-2 text-[11px] font-medium tracking-[0.24em] text-slate-400 uppercase">
+                {group.label}
+              </p>
+            ) : null}
             <div className="space-y-1.5">
               {group.items.map((item) => {
                 const isActive = isActivePath(pathname, item.href);
@@ -143,7 +172,10 @@ export function DashboardShell({
                 return (
                   <Button
                     asChild
-                    className="h-auto w-full justify-start rounded-2xl px-3 py-3"
+                    className={cn(
+                      "h-auto w-full justify-start rounded-2xl px-3 py-3",
+                      sidebarCollapsed && "justify-center px-2"
+                    )}
                     key={item.href}
                     onClick={() => setMobileNavOpen(false)}
                     size="sm"
@@ -160,14 +192,16 @@ export function DashboardShell({
                       >
                         <DashboardNavIcon icon={item.icon} />
                       </span>
-                      <span className="min-w-0 flex-1 text-left">
-                        <span className="block text-sm font-medium text-foreground">
-                          {item.label}
+                      {!sidebarCollapsed ? (
+                        <span className="min-w-0 flex-1 text-left">
+                          <span className="block text-sm font-medium text-foreground">
+                            {item.label}
+                          </span>
+                          <span className="block text-xs leading-5 text-muted-foreground">
+                            {item.description}
+                          </span>
                         </span>
-                        <span className="block text-xs leading-5 text-muted-foreground">
-                          {item.description}
-                        </span>
-                      </span>
+                      ) : null}
                     </Link>
                   </Button>
                 );
@@ -176,38 +210,67 @@ export function DashboardShell({
           </div>
         ))}
       </nav>
+
+      <Separator />
+
+      <div className={cn("space-y-3 px-3 py-4", sidebarCollapsed && "px-2") }>
+        <div className={cn("rounded-2xl border border-slate-200 bg-slate-50 p-3", sidebarCollapsed && "p-2") }>
+          <div className={cn("flex items-center gap-3", sidebarCollapsed && "justify-center") }>
+            <UserButton />
+            {!sidebarCollapsed ? (
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium text-slate-950">Account</p>
+                <p className="text-xs text-slate-500">Signed in</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+        {!sidebarCollapsed ? (
+          <div className="rounded-2xl border border-slate-200 bg-white p-2">
+            <OrganizationSwitcher
+              afterCreateOrganizationUrl="/"
+              afterLeaveOrganizationUrl="/org-selection"
+              hidePersonal
+            />
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.10),_transparent_26%),linear-gradient(180deg,_#f8fafc,_#eef2ff_42%,_#f8fafc)]">
-      <div className="mx-auto flex min-h-screen max-w-[1440px] gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <aside className="hidden w-[300px] shrink-0 xl:block">
-          <Card className="sticky top-4 h-[calc(100vh-2rem)] overflow-hidden border-white/80 bg-white/92 shadow-xl shadow-slate-200/70 backdrop-blur">
+    <div className="min-h-screen overflow-x-hidden bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.08),_transparent_24%),linear-gradient(180deg,_#f8fafc,_#eef2ff_42%,_#f8fafc)]">
+      <div className="mx-auto flex min-h-screen max-w-[1440px] gap-4 px-3 py-3 sm:px-4 lg:px-6">
+        <aside
+          className={cn(
+            "hidden shrink-0 xl:block",
+            sidebarCollapsed ? "w-[92px]" : "w-[300px]"
+          )}
+        >
+          <Card className="sticky top-3 h-[calc(100vh-1.5rem)] overflow-hidden border-white/80 bg-white/92 shadow-xl shadow-slate-200/70 backdrop-blur">
             {nav}
           </Card>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
           <Card className="border-white/80 bg-white/92 shadow-lg shadow-slate-200/70 backdrop-blur">
-            <CardContent className="flex flex-col gap-5 px-4 py-4 sm:px-6 sm:py-5">
+            <CardContent className="flex flex-col gap-4 px-4 py-4 sm:px-5">
               <div className="flex items-center justify-between gap-3 xl:hidden">
-                <Button
-                  onClick={() => setMobileNavOpen((value) => !value)}
-                  size="sm"
-                  type="button"
-                  variant="outline"
-                >
-                  {mobileNavOpen ? "Close menu" : "Open menu"}
-                </Button>
                 <div className="flex items-center gap-2">
-                  <OrganizationSwitcher
-                    afterCreateOrganizationUrl="/"
-                    afterLeaveOrganizationUrl="/org-selection"
-                    hidePersonal
-                  />
-                  <UserButton />
+                  <Button
+                    onClick={() => setMobileNavOpen((value) => !value)}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                  >
+                    <svg aria-hidden="true" className="size-4" fill="none" viewBox="0 0 24 24">
+                      <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+                    </svg>
+                    <span className="sr-only">Open navigation</span>
+                  </Button>
+                  <p className="text-sm font-semibold tracking-tight text-slate-950">cloler.ai</p>
                 </div>
+                <UserButton />
               </div>
 
               {mobileNavOpen ? (
@@ -218,37 +281,18 @@ export function DashboardShell({
                 </div>
               ) : null}
 
-              <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    {activeItem ? <Badge variant="secondary">{activeItem.label}</Badge> : null}
-                    <p className="text-[11px] font-medium tracking-[0.28em] text-muted-foreground uppercase">
-                      Agency voice operations
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                      {title}
-                    </h1>
-                    <p className="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
-                      {description}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="hidden items-center gap-3 xl:flex">
-                  <OrganizationSwitcher
-                    afterCreateOrganizationUrl="/"
-                    afterLeaveOrganizationUrl="/org-selection"
-                    hidePersonal
-                  />
-                  <UserButton />
-                </div>
+              <div className="space-y-2">
+                <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+                  {title}
+                </h1>
+                <p className="max-w-3xl text-sm leading-6 text-muted-foreground sm:text-base">
+                  {description}
+                </p>
               </div>
             </CardContent>
           </Card>
 
-          <div className="flex-1">{children}</div>
+          <div className="min-w-0 flex-1">{children}</div>
         </div>
       </div>
     </div>
