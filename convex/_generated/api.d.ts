@@ -14,6 +14,7 @@ import type * as lib_logger from "../lib/logger.js";
 import type * as lib_organizationQueries from "../lib/organizationQueries.js";
 import type * as lib_syncBoundaries from "../lib/syncBoundaries.js";
 import type * as seed from "../seed.js";
+import type * as voices from "../voices.js";
 
 import type {
   ApiFromModules,
@@ -28,6 +29,7 @@ declare const fullApi: ApiFromModules<{
   "lib/organizationQueries": typeof lib_organizationQueries;
   "lib/syncBoundaries": typeof lib_syncBoundaries;
   seed: typeof seed;
+  voices: typeof voices;
 }>;
 
 /**

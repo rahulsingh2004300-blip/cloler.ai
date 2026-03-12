@@ -1,4 +1,4 @@
-import { defineSchema, defineTable } from "convex/server";
+﻿import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
@@ -94,4 +94,84 @@ export default defineSchema({
     metadata: v.optional(v.any()),
     createdAt: v.number(),
   }).index("by_organization_and_created_at", ["organizationId", "createdAt"]),
+
+  voiceProfiles: defineTable({
+    organizationId: v.id("organizations"),
+    createdByUserId: v.optional(v.id("users")),
+    name: v.string(),
+    slug: v.string(),
+    description: v.optional(v.string()),
+    language: v.union(
+      v.literal("en-IN"),
+      v.literal("hi-IN"),
+      v.literal("hinglish"),
+    ),
+    mode: v.union(v.literal("custom"), v.literal("stock")),
+    cloneStatus: v.union(
+      v.literal("draft"),
+      v.literal("samples_pending"),
+      v.literal("ready_for_training"),
+      v.literal("training_requested"),
+      v.literal("training"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    sampleCount: v.number(),
+    generationCount: v.number(),
+    defaultForCalls: v.boolean(),
+    stockVoiceKey: v.optional(v.string()),
+    cloneJobRequestedAt: v.optional(v.number()),
+    lastCloneJobAt: v.optional(v.number()),
+    lastCloneError: v.optional(v.string()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_organization_and_updated_at", ["organizationId", "updatedAt"])
+    .index("by_organization_and_slug", ["organizationId", "slug"])
+    .index("by_organization_and_default", ["organizationId", "defaultForCalls"]),
+
+  voiceSamples: defineTable({
+    organizationId: v.id("organizations"),
+    voiceProfileId: v.id("voiceProfiles"),
+    storageId: v.id("_storage"),
+    fileName: v.string(),
+    contentType: v.string(),
+    sizeBytes: v.number(),
+    durationSeconds: v.optional(v.number()),
+    sampleKind: v.union(v.literal("reference"), v.literal("preview")),
+    uploadStatus: v.union(
+      v.literal("uploaded"),
+      v.literal("processing"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    createdAt: v.number(),
+  })
+    .index("by_voice_profile", ["voiceProfileId"])
+    .index("by_organization_and_created_at", ["organizationId", "createdAt"]),
+
+  voiceGenerations: defineTable({
+    organizationId: v.id("organizations"),
+    voiceProfileId: v.id("voiceProfiles"),
+    requestedByUserId: v.optional(v.id("users")),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("processing"),
+      v.literal("ready"),
+      v.literal("failed"),
+    ),
+    provider: v.union(
+      v.literal("sarvam_bulbul_v2"),
+      v.literal("sarvam_bulbul_v3"),
+      v.literal("custom_preview"),
+    ),
+    text: v.string(),
+    characterCount: v.number(),
+    outputStorageId: v.optional(v.id("_storage")),
+    failureReason: v.optional(v.string()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_voice_profile", ["voiceProfileId"])
+    .index("by_organization_and_created_at", ["organizationId", "createdAt"]),
 });
