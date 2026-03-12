@@ -18,6 +18,8 @@ export async function GET() {
     },
   });
 
+  await Sentry.flush(2000);
+
   return NextResponse.json(
     {
       ok: false,
@@ -28,3 +30,4 @@ export async function GET() {
     },
   );
 }
+
