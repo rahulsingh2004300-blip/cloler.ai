@@ -130,12 +130,12 @@ export default defineSchema({
     defaultForCalls: v.boolean(),
     stockVoiceKey: v.optional(v.string()),
     providerVoiceId: v.optional(v.string()),
-    themePresetKey: themePreset,
-    creativity: v.number(),
-    expressiveness: v.number(),
-    pace: v.number(),
-    stability: v.number(),
-    warmth: v.number(),
+    themePresetKey: v.optional(themePreset),
+    creativity: v.optional(v.number()),
+    expressiveness: v.optional(v.number()),
+    pace: v.optional(v.number()),
+    stability: v.optional(v.number()),
+    warmth: v.optional(v.number()),
     previewScript: v.optional(v.string()),
     cloneJobRequestedAt: v.optional(v.number()),
     lastCloneJobAt: v.optional(v.number()),
@@ -208,11 +208,11 @@ export default defineSchema({
     playbackMode: v.optional(
       v.union(v.literal("browser_tts"), v.literal("stored_audio")),
     ),
-    creativity: v.number(),
-    expressiveness: v.number(),
-    pace: v.number(),
-    stability: v.number(),
-    warmth: v.number(),
+    creativity: v.optional(v.number()),
+    expressiveness: v.optional(v.number()),
+    pace: v.optional(v.number()),
+    stability: v.optional(v.number()),
+    warmth: v.optional(v.number()),
     text: v.string(),
     characterCount: v.number(),
     generatedSeconds: v.optional(v.number()),
@@ -224,3 +224,5 @@ export default defineSchema({
     .index("by_voice_profile", ["voiceProfileId"])
     .index("by_organization_and_created_at", ["organizationId", "createdAt"]),
 });
+
+

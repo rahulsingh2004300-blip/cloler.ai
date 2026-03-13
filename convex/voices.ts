@@ -1,4 +1,4 @@
-﻿import { internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import {
   internalMutation,
@@ -236,6 +236,14 @@ export const getVoiceLibrary = query({
             }
           : null;
 
+        const tuning = sanitizeVoiceTuning({
+          creativity: voiceProfile.creativity ?? defaultVoiceTuning().creativity,
+          expressiveness: voiceProfile.expressiveness ?? defaultVoiceTuning().expressiveness,
+          pace: voiceProfile.pace ?? defaultVoiceTuning().pace,
+          stability: voiceProfile.stability ?? defaultVoiceTuning().stability,
+          warmth: voiceProfile.warmth ?? defaultVoiceTuning().warmth,
+        });
+
         return {
           id: voiceProfile._id,
           name: voiceProfile.name,
@@ -251,12 +259,12 @@ export const getVoiceLibrary = query({
           defaultForCalls: voiceProfile.defaultForCalls,
           providerVoiceId: voiceProfile.providerVoiceId,
           stockVoiceKey: voiceProfile.stockVoiceKey,
-          themePresetKey: voiceProfile.themePresetKey,
-          creativity: voiceProfile.creativity,
-          expressiveness: voiceProfile.expressiveness,
-          pace: voiceProfile.pace,
-          stability: voiceProfile.stability,
-          warmth: voiceProfile.warmth,
+          themePresetKey: voiceProfile.themePresetKey ?? "sales_opener",
+          creativity: tuning.creativity,
+          expressiveness: tuning.expressiveness,
+          pace: tuning.pace,
+          stability: tuning.stability,
+          warmth: tuning.warmth,
           previewScript: voiceProfile.previewScript,
           lastPreviewGeneratedAt: voiceProfile.lastPreviewGeneratedAt,
           updatedAt: voiceProfile.updatedAt,
@@ -747,7 +755,7 @@ export const completeVoicePreviewGeneration = internalMutation({
     if (!generation || generation.status !== "processing") return;
     const voiceProfile = await ctx.db.get(generation.voiceProfileId);
     const now = Date.now();
-    const generatedSeconds = estimateGeneratedSeconds(generation.characterCount, generation.pace);
+    const generatedSeconds = estimateGeneratedSeconds(generation.characterCount, generation.pace ?? defaultVoiceTuning().pace);
     const unitCostInr = getVoiceUsageUnitCost(generation.provider);
     const totalCostInr = Number((generation.characterCount * unitCostInr).toFixed(2));
 
@@ -813,5 +821,7 @@ export const completeVoicePreviewGeneration = internalMutation({
     });
   },
 });
+
+
 
 
