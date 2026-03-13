@@ -123,20 +123,32 @@ function formatDateTime(timestamp?: number) {
 function formatVoiceStatus(status: string) {
   return status.replace(/_/g, " ");
 }
+function sentenceCase(value: string) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
-function waveformBars(active: boolean) {
+
+function waveformBars(active: boolean, paused = false) {
   const bars = [22, 34, 18, 28, 12, 30, 20, 26, 14, 24];
   return (
     <div className="flex h-10 items-end gap-1">
       {bars.map((height, index) => (
         <span
           key={`${height}-${index}`}
-          className={`w-1.5 rounded-full transition-all ${active ? "bg-sky-500" : "bg-slate-300"}`}
-          style={{ height }}
+          className={`w-1.5 rounded-full transition-all ${active ? (paused ? "bg-amber-300" : "bg-sky-500") : "bg-slate-300"}`}
+          style={{ height, opacity: active && !paused ? 0.65 + ((index % 3) * 0.1) : 0.5 }}
         />
       ))}
     </div>
   );
+}
+
+function formatDuration(milliseconds: number) {
+  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
+  const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
 }
 
 function sliderTrackClass(value: number) {
@@ -149,11 +161,16 @@ function presetLabel(key: ThemePresetKey) {
   return themePresets.find((preset) => preset.key === key)?.name ?? key;
 }
 
+function modeLabel(mode: VoiceMode) {
+  return mode === "stock" ? "Stock voice" : "Cloned voice";
+}
+
 export function VoiceLibraryWorkspace() {
   const { isLoaded: authLoaded, orgId, orgSlug } = useAuth();
   const { organization } = useOrganization();
   const voiceLibrary = useQuery(api.voices.getVoiceLibrary, authLoaded && orgId ? { organizationSlug: orgSlug ?? undefined } : "skip");
   const createVoiceProfile = useMutation(api.voices.createVoiceProfile);
+  const acceptVoiceConsent = useMutation(api.voices.acceptVoiceConsent);
   const updateVoiceProfileStyle = useMutation(api.voices.updateVoiceProfileStyle);
   const generateVoiceSampleUploadUrl = useMutation(api.voices.generateVoiceSampleUploadUrl);
   const saveUploadedVoiceSample = useMutation(api.voices.saveUploadedVoiceSample);
@@ -166,19 +183,25 @@ export function VoiceLibraryWorkspace() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [language, setLanguage] = useState<(typeof languageOptions)[number]["value"]>("en-IN");
+  const [consentAcceptedForCreate, setConsentAcceptedForCreate] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"neutral" | "error" | "success">("neutral");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingVoiceId, setPendingVoiceId] = useState<string | null>(null);
   const [filesByVoiceId, setFilesByVoiceId] = useState<Record<string, File | null>>({});
   const [previewTextByVoiceId, setPreviewTextByVoiceId] = useState<Record<string, string>>({});
+  const [presetNameByVoiceId, setPresetNameByVoiceId] = useState<Record<string, string>>({});
   const [settingsByVoiceId, setSettingsByVoiceId] = useState<Record<string, { presetKey: ThemePresetKey; tuning: VoiceTuning }>>({});
   const [playingGenerationId, setPlayingGenerationId] = useState<string | null>(null);
   const [recordingVoiceId, setRecordingVoiceId] = useState<string | null>(null);
+  const [recordingPaused, setRecordingPaused] = useState(false);
+  const [recordingElapsedMs, setRecordingElapsedMs] = useState(0);
   const [recordedClipsByVoiceId, setRecordedClipsByVoiceId] = useState<Record<string, RecordedClip | null>>({});
   const recorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const recordingStartedAtRef = useRef<number | null>(null);
+  const recordingAccumulatedMsRef = useRef(0);
 
   useEffect(() => {
     return () => {
@@ -191,6 +214,17 @@ export function VoiceLibraryWorkspace() {
       streamRef.current?.getTracks().forEach((track) => track.stop());
     };
   }, [recordedClipsByVoiceId]);
+
+  useEffect(() => {
+    if (!recordingVoiceId || recordingPaused) return;
+
+    const timer = window.setInterval(() => {
+      const startedAt = recordingStartedAtRef.current ?? Date.now();
+      setRecordingElapsedMs(recordingAccumulatedMsRef.current + (Date.now() - startedAt));
+    }, 120);
+
+    return () => window.clearInterval(timer);
+  }, [recordingPaused, recordingVoiceId]);
 
   useEffect(() => {
     if (!voiceLibrary) return;
@@ -220,6 +254,16 @@ export function VoiceLibraryWorkspace() {
         if (!next[voice.id]) {
           const preset = themePresets.find((item) => item.key === voice.themePresetKey);
           next[voice.id] = voice.previewScript ?? preset?.script ?? themePresets[0].script;
+        }
+      }
+      return next;
+    });
+
+    setPresetNameByVoiceId((current) => {
+      const next = { ...current };
+      for (const voice of voiceLibrary.voices) {
+        if (!next[voice.id]) {
+          next[voice.id] = voice.presetName ?? presetLabel(voice.themePresetKey);
         }
       }
       return next;
@@ -255,6 +299,33 @@ export function VoiceLibraryWorkspace() {
       },
     };
 
+  const presetNameFor = (voice: NonNullable<typeof voiceLibrary>["voices"][number]) =>
+    presetNameByVoiceId[voice.id] ?? voice.presetName ?? presetLabel(voice.themePresetKey);
+
+  const voiceReadyMessage = (voice: NonNullable<typeof voiceLibrary>["voices"][number]) => {
+    if (voice.mode === "stock") {
+      return "Stock Sarvam voice is ready for preset saving and preview generation.";
+    }
+
+    if (!voice.consentAccepted) {
+      return "Accept voice rights terms before collecting samples.";
+    }
+
+    if (voice.cloneStatus === "ready") {
+      return "Clone is ready. Save the preset and generate a preview before assigning it to campaigns.";
+    }
+
+    if (voice.sampleCount < 3) {
+      return `Add ${3 - voice.sampleCount} more source sample${voice.sampleCount === 2 ? "" : "s"} to unlock clone training.`;
+    }
+
+    if (["training_requested", "training"].includes(voice.cloneStatus)) {
+      return "Clone training is running. Preview generation will unlock as soon as training finishes.";
+    }
+
+    return "This voice is almost ready. Start clone training, then generate a final preview.";
+  };
+
   const updateVoiceSetting = (voiceId: string, patch: Partial<{ presetKey: ThemePresetKey; tuning: Partial<VoiceTuning> }>) => {
     setSettingsByVoiceId((current) => {
       const existing = current[voiceId] ?? { presetKey: "sales_opener" as ThemePresetKey, tuning: defaultTuning };
@@ -281,6 +352,10 @@ export function VoiceLibraryWorkspace() {
     setFeedback("");
 
     try {
+      if (mode === "custom" && !consentAcceptedForCreate) {
+        throw new Error("Accept the voice rights terms before creating a cloned voice.");
+      }
+
       await createVoiceProfile({
         organizationSlug: orgSlug ?? undefined,
         name,
@@ -288,13 +363,15 @@ export function VoiceLibraryWorkspace() {
         language,
         mode,
         stockVoiceKey: mode === "stock" ? stockVoiceKey : undefined,
+        consentAccepted: mode === "custom" ? consentAcceptedForCreate : undefined,
       });
       setName("");
       setDescription("");
       setLanguage("en-IN");
       setMode("custom");
       setStockVoiceKey("bulbul_v2");
-      setFeedback(mode === "stock" ? "Stock voice added to the library." : "Voice profile created.", "success");
+      setConsentAcceptedForCreate(false);
+      setFeedback(mode === "stock" ? "Stock voice added to the library." : "Voice shell created. Add source samples next.", "success");
     } catch (error) {
       logger.error("Failed to create voice profile.", {
         error: serializeError(error),
@@ -392,7 +469,20 @@ export function VoiceLibraryWorkspace() {
     }
   };
 
-  const handleSaveStyle = async (voiceId: string, presetKey: ThemePresetKey, tuning: VoiceTuning, previewScript: string) => {
+  const handleAcceptConsent = async (voiceId: string) => {
+    setPendingVoiceId(voiceId);
+    setFeedback("");
+    try {
+      await acceptVoiceConsent({ organizationSlug: orgSlug ?? undefined, voiceProfileId: voiceId as never });
+      setFeedback("Voice rights confirmation saved.", "success");
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "Consent update failed.", "error");
+    } finally {
+      setPendingVoiceId(null);
+    }
+  };
+
+  const handleSaveStyle = async (voiceId: string, presetKey: ThemePresetKey, tuning: VoiceTuning, previewScript: string, presetName: string) => {
     setPendingVoiceId(voiceId);
     setFeedback("");
     try {
@@ -400,6 +490,7 @@ export function VoiceLibraryWorkspace() {
         organizationSlug: orgSlug ?? undefined,
         voiceProfileId: voiceId as never,
         themePresetKey: presetKey,
+        presetName: presetName.trim() || presetLabel(presetKey),
         previewScript,
         ...tuning,
       });
@@ -411,7 +502,7 @@ export function VoiceLibraryWorkspace() {
     }
   };
 
-  const handleRequestPreview = async (voiceId: string, presetKey: ThemePresetKey, tuning: VoiceTuning, fallbackScript: string) => {
+  const handleRequestPreview = async (voiceId: string, presetKey: ThemePresetKey, tuning: VoiceTuning, fallbackScript: string, presetName: string) => {
     const previewScript = (previewTextByVoiceId[voiceId] ?? fallbackScript).trim();
     setPendingVoiceId(voiceId);
     setFeedback("");
@@ -421,6 +512,7 @@ export function VoiceLibraryWorkspace() {
         voiceProfileId: voiceId as never,
         text: previewScript,
         presetKey,
+        presetName: presetName.trim() || presetLabel(presetKey),
         ...tuning,
       });
       setFeedback("Preview generation started.", "success");
@@ -455,12 +547,21 @@ export function VoiceLibraryWorkspace() {
       return;
     }
 
+    if (recordingVoiceId && recordingVoiceId !== voiceId) {
+      setFeedback("Finish the current recording before starting another one.", "error");
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
       recorderRef.current = recorder;
       streamRef.current = stream;
+      recordingAccumulatedMsRef.current = 0;
+      recordingStartedAtRef.current = Date.now();
+      setRecordingElapsedMs(0);
+      setRecordingPaused(false);
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) chunksRef.current.push(event.data);
       };
@@ -475,6 +576,10 @@ export function VoiceLibraryWorkspace() {
           return { ...current, [voiceId]: { file, url } };
         });
         setRecordingVoiceId(null);
+        setRecordingPaused(false);
+        setRecordingElapsedMs(0);
+        recordingStartedAtRef.current = null;
+        recordingAccumulatedMsRef.current = 0;
         stream.getTracks().forEach((track) => track.stop());
       };
       recorder.start();
@@ -483,6 +588,26 @@ export function VoiceLibraryWorkspace() {
     } catch (error) {
       setFeedback(error instanceof Error ? error.message : "Recording could not start.", "error");
     }
+  };
+
+  const handleToggleRecordingPause = () => {
+    if (!recorderRef.current || !recordingVoiceId) return;
+
+    if (recordingPaused) {
+      recorderRef.current.resume();
+      recordingStartedAtRef.current = Date.now();
+      setRecordingPaused(false);
+      setFeedback("Recording resumed.", "neutral");
+      return;
+    }
+
+    recorderRef.current.pause();
+    const startedAt = recordingStartedAtRef.current ?? Date.now();
+    recordingAccumulatedMsRef.current += Date.now() - startedAt;
+    recordingStartedAtRef.current = null;
+    setRecordingElapsedMs(recordingAccumulatedMsRef.current);
+    setRecordingPaused(true);
+    setFeedback("Recording paused.", "neutral");
   };
 
   const handleStopRecording = () => {
@@ -507,17 +632,17 @@ export function VoiceLibraryWorkspace() {
         <Card className="border-white/80 bg-white/92 shadow-lg shadow-slate-200/70">
           <CardHeader>
             <CardTitle>Build voice library</CardTitle>
-            <CardDescription>Create either a stock calling voice or a custom cloned voice.</CardDescription>
+            <CardDescription>Create a voice, collect consented samples, then save a reusable calling preset.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-3 sm:grid-cols-2">
               <button className={`rounded-2xl border px-4 py-4 text-left ${mode === "custom" ? "border-sky-400 bg-sky-50" : "border-border/70 bg-background/70"}`} onClick={() => setMode("custom")} type="button">
                 <p className="text-sm font-semibold text-foreground">Custom cloned voice</p>
-                <p className="mt-1 text-sm text-muted-foreground">Upload or record your own voice samples.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Record or upload the source speaker you want to turn into a calling voice.</p>
               </button>
               <button className={`rounded-2xl border px-4 py-4 text-left ${mode === "stock" ? "border-sky-400 bg-sky-50" : "border-border/70 bg-background/70"}`} onClick={() => setMode("stock")} type="button">
                 <p className="text-sm font-semibold text-foreground">Stock Sarvam voice</p>
-                <p className="mt-1 text-sm text-muted-foreground">Start faster with platform-managed stock voices.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Use a platform-managed Sarvam voice and skip the cloning step.</p>
               </button>
             </div>
 
@@ -558,10 +683,20 @@ export function VoiceLibraryWorkspace() {
 
             <div className="space-y-2">
               <Label htmlFor="voice-description">Notes</Label>
-              <Textarea id="voice-description" onChange={(event) => setDescription(event.target.value)} placeholder="Internal note about use-case, tone, or niche." rows={4} value={description} />
+              <Textarea id="voice-description" onChange={(event) => setDescription(event.target.value)} placeholder="Use-case, niche, or agent context." rows={4} value={description} />
             </div>
 
-            <Button disabled={isSubmitting || name.trim().length < 2} onClick={handleCreateVoiceProfile} type="button">
+            {mode === "custom" ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <p className="mb-2 font-medium text-amber-950">Voice rights and legal acceptance</p>
+                <label className="flex items-start gap-3">
+                  <input checked={consentAcceptedForCreate} className="mt-1 size-4 rounded border-amber-300" onChange={(event) => setConsentAcceptedForCreate(event.target.checked)} type="checkbox" />
+                  <span>I confirm I have the rights to clone and use this voice, and I understand cloler.ai only provides the tooling and is not responsible for misuse or unlawful impersonation.</span>
+                </label>
+              </div>
+            ) : null}
+
+            <Button disabled={isSubmitting || name.trim().length < 2 || (mode === "custom" && !consentAcceptedForCreate)} onClick={handleCreateVoiceProfile} type="button">
               {isSubmitting ? "Creating..." : mode === "stock" ? "Add stock voice" : "Create cloned voice"}
             </Button>
 
@@ -586,9 +721,15 @@ export function VoiceLibraryWorkspace() {
               const isBusy = pendingVoiceId === voice.id;
               const activeSettings = voiceSettingFor(voice);
               const previewScript = previewTextByVoiceId[voice.id] ?? themePresets.find((preset) => preset.key === activeSettings.presetKey)?.script ?? themePresets[0].script;
+              const presetName = presetNameFor(voice);
               const selectedFile = filesByVoiceId[voice.id] ?? null;
               const recordedClip = recordedClipsByVoiceId[voice.id] ?? null;
-              const canTrain = voice.mode === "custom" && voice.sampleCount >= 3 && !["training_requested", "training"].includes(voice.cloneStatus);
+              const canTrain = voice.mode === "custom" && voice.consentAccepted && voice.sampleCount >= 3 && !["training_requested", "training"].includes(voice.cloneStatus);
+              const canGeneratePreview = (voice.mode === "stock" || voice.cloneStatus === "ready") && previewScript.trim().length >= 12;
+              const isRecordingThisVoice = recordingVoiceId === voice.id;
+              const latestReadyGeneration = voice.recentGenerations.find((generation) => generation.status === "ready") ?? null;
+              const sampleGoalRemaining = Math.max(0, 3 - voice.sampleCount);
+              const hasUsableSample = Boolean(selectedFile || recordedClip || voice.latestSamples.length > 0);
 
               return (
                 <Card className="border-white/80 bg-white/92 shadow-lg shadow-slate-200/70" key={voice.id}>
@@ -597,7 +738,8 @@ export function VoiceLibraryWorkspace() {
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="text-2xl font-semibold text-foreground">{voice.name}</h3>
-                          <Badge variant="outline">{voice.mode === "stock" ? "Stock" : "Cloned"}</Badge>
+                          <Badge variant="outline">{modeLabel(voice.mode)}</Badge>
+                          {voice.consentAccepted ? <Badge variant="secondary">Consent accepted</Badge> : null}
                           <Badge variant="outline">{formatVoiceStatus(voice.cloneStatus)}</Badge>
                           <Badge variant="secondary">{voice.language}</Badge>
                           {voice.defaultForCalls ? <Badge>Default for calling</Badge> : null}
@@ -608,7 +750,7 @@ export function VoiceLibraryWorkspace() {
                       <div className="grid min-w-[260px] gap-3 sm:grid-cols-4">
                         <div className="rounded-2xl border border-border/70 bg-background/80 p-3"><p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Samples</p><p className="mt-2 text-xl font-semibold text-foreground">{voice.sampleCount}</p></div>
                         <div className="rounded-2xl border border-border/70 bg-background/80 p-3"><p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Previews</p><p className="mt-2 text-xl font-semibold text-foreground">{voice.previewCount}</p></div>
-                        <div className="rounded-2xl border border-border/70 bg-background/80 p-3"><p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Preset</p><p className="mt-2 text-sm font-semibold text-foreground">{presetLabel(activeSettings.presetKey)}</p></div>
+                        <div className="rounded-2xl border border-border/70 bg-background/80 p-3"><p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Preset</p><p className="mt-2 text-sm font-semibold text-foreground">{presetName}</p></div>
                         <div className="rounded-2xl border border-border/70 bg-background/80 p-3"><p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Voice key</p><p className="mt-2 truncate text-sm font-semibold text-foreground">{voice.providerVoiceId ?? "Pending"}</p></div>
                       </div>
                     </div>
@@ -616,25 +758,43 @@ export function VoiceLibraryWorkspace() {
                     <div className="grid gap-4 2xl:grid-cols-[minmax(320px,1fr)_minmax(420px,1.25fr)]">
                       <div className="space-y-4 rounded-3xl border border-border/70 bg-background/70 p-5">
                         <div>
-                          <p className="text-base font-semibold text-foreground">Source samples</p>
-                          <p className="text-sm text-muted-foreground">Upload clips or record a sample directly in the browser.</p>
+                          <p className="text-base font-semibold text-foreground">1. Source voice</p>
+                          <p className="text-sm text-muted-foreground">Upload or record the speaker you want the agent to sound like. Clone training unlocks after three consented clips.</p>
                         </div>
                         {voice.mode === "custom" ? (
                           <>
+                            {!voice.consentAccepted ? (
+                              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                <p className="font-medium text-amber-950">Voice rights confirmation required</p>
+                                <p className="mt-1">Confirm that you have lawful rights to clone this voice before uploading samples or training it.</p>
+                                <Button className="mt-3" disabled={isBusy} onClick={() => handleAcceptConsent(voice.id)} type="button" variant="outline">Accept voice terms</Button>
+                              </div>
+                            ) : null}
                             <div className="grid gap-3 md:grid-cols-2">
                               <div className="space-y-2">
                                 <Label htmlFor={`file-${voice.id}`}>Upload clip</Label>
                                 <Input id={`file-${voice.id}`} accept="audio/*" onChange={(event) => setFilesByVoiceId((current) => ({ ...current, [voice.id]: event.target.files?.[0] ?? null }))} type="file" />
                               </div>
                               <div className="rounded-2xl border border-border/70 bg-white p-4">
-                                <p className="text-sm font-medium text-foreground">Record here</p>
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-sm font-medium text-foreground">Record here</p>
+                                  <Badge variant="outline">{isRecordingThisVoice ? (recordingPaused ? "Paused" : "Recording") : "Ready"}</Badge>
+                                </div>
+                                <div className="mt-3 rounded-2xl border border-border/70 bg-slate-50 px-4 py-3">
+                                  <div className="flex items-center justify-between gap-3">
+                                    {waveformBars(isRecordingThisVoice, recordingPaused)}
+                                    <span className="text-sm font-semibold text-foreground">{isRecordingThisVoice ? formatDuration(recordingElapsedMs) : "00:00"}</span>
+                                  </div>
+                                </div>
                                 <div className="mt-3 flex flex-wrap gap-2">
-                                  {recordingVoiceId === voice.id ? (
-                                    <Button onClick={handleStopRecording} type="button" variant="destructive">Stop recording</Button>
+                                  {isRecordingThisVoice ? (
+                                    <>
+                                      <Button onClick={handleToggleRecordingPause} type="button" variant="outline">{recordingPaused ? "Resume recording" : "Pause recording"}</Button>
+                                      <Button onClick={handleStopRecording} type="button" variant="destructive">Stop and save clip</Button>
+                                    </>
                                   ) : (
                                     <Button onClick={() => handleStartRecording(voice.id)} type="button" variant="outline">Start recording</Button>
                                   )}
-                                  {recordingVoiceId === voice.id ? <Badge>Recording live</Badge> : null}
                                 </div>
                                 {recordedClip ? (
                                   <div className="mt-3 space-y-2">
@@ -644,8 +804,21 @@ export function VoiceLibraryWorkspace() {
                                 ) : null}
                               </div>
                             </div>
+                            <div className="rounded-2xl border border-border/70 bg-white p-4">
+                              <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <p className="text-sm font-medium text-foreground">Sample progress</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    {sampleGoalRemaining === 0
+                                      ? "Enough samples collected. You can start clone training."
+                                      : `${sampleGoalRemaining} more sample${sampleGoalRemaining === 1 ? "" : "s"} needed before training.`}
+                                  </p>
+                                </div>
+                                <Badge variant="outline">{voice.sampleCount}/3 uploaded</Badge>
+                              </div>
+                            </div>
                             <div className="flex flex-wrap gap-2">
-                              <Button disabled={isBusy || (!selectedFile && !recordedClip)} onClick={() => handleUpload(voice.id)} type="button">{isBusy ? "Uploading..." : "Upload reference sample"}</Button>
+                              <Button disabled={isBusy || !voice.consentAccepted || (!selectedFile && !recordedClip)} onClick={() => handleUpload(voice.id)} type="button">{isBusy ? "Uploading..." : "Upload reference sample"}</Button>
                               <Button disabled={voice.defaultForCalls || isBusy} onClick={() => handleSetDefault(voice.id)} type="button" variant="outline">Use for calling</Button>
                               <Button disabled={!canTrain || isBusy} onClick={() => handleRequestClone(voice.id)} type="button" variant="outline">{voice.cloneStatus === "ready" ? "Retrain clone" : "Start clone training"}</Button>
                             </div>
@@ -672,15 +845,20 @@ export function VoiceLibraryWorkspace() {
 
                       <div className="space-y-4 rounded-3xl border border-border/70 bg-background/70 p-5">
                         <div>
-                          <p className="text-base font-semibold text-foreground">Voice behavior</p>
-                          <p className="text-sm text-muted-foreground">Choose a theme, tune the delivery, and generate a preview before using it in campaigns.</p>
+                          <p className="text-base font-semibold text-foreground">2. Behavior and preset</p>
+                          <p className="text-sm text-muted-foreground">Choose the selling style, tune the delivery, then save it as a reusable preset for campaigns and calling agents.</p>
                         </div>
                         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                           {themePresets.map((preset) => (
-                            <button key={preset.key} className={`rounded-2xl border px-4 py-4 text-left ${activeSettings.presetKey === preset.key ? "border-sky-400 bg-sky-50" : "border-border/70 bg-white"}`} onClick={() => { updateVoiceSetting(voice.id, { presetKey: preset.key }); setPreviewTextByVoiceId((current) => ({ ...current, [voice.id]: current[voice.id] ?? preset.script })); }} type="button">
+                            <button key={preset.key} className={`rounded-2xl border px-4 py-4 text-left ${activeSettings.presetKey === preset.key ? "border-sky-400 bg-sky-50" : "border-border/70 bg-white"}`} onClick={() => { updateVoiceSetting(voice.id, { presetKey: preset.key }); setPresetNameByVoiceId((current) => ({ ...current, [voice.id]: preset.name })); setPreviewTextByVoiceId((current) => ({ ...current, [voice.id]: preset.script })); }} type="button">
                               <p className="text-sm font-semibold text-foreground">{preset.name}</p><p className="mt-1 text-sm text-muted-foreground">{preset.hint}</p>
                             </button>
                           ))}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor={`preset-name-${voice.id}`}>Preset name</Label>
+                          <Input id={`preset-name-${voice.id}`} onChange={(event) => setPresetNameByVoiceId((current) => ({ ...current, [voice.id]: event.target.value }))} placeholder="Sales opener" value={presetName} />
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
@@ -706,9 +884,48 @@ export function VoiceLibraryWorkspace() {
                           <Textarea id={`preview-${voice.id}`} onChange={(event) => setPreviewTextByVoiceId((current) => ({ ...current, [voice.id]: event.target.value }))} rows={4} value={previewScript} />
                         </div>
 
+                        <div className="rounded-2xl border border-border/70 bg-white p-4">
+                          <p className="text-sm font-medium text-foreground">3. Final result before campaign use</p>
+                          <p className="mt-2 text-sm text-muted-foreground">{voiceReadyMessage(voice)}</p>
+                          <div className="mt-4 grid gap-3 md:grid-cols-3">
+                            <div className="rounded-2xl border border-border/70 bg-background/70 p-3">
+                              <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Preset saved as</p>
+                              <p className="mt-2 text-sm font-semibold text-foreground">{presetName}</p>
+                            </div>
+                            <div className="rounded-2xl border border-border/70 bg-background/70 p-3">
+                              <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Preview availability</p>
+                              <p className="mt-2 text-sm font-semibold text-foreground">{canGeneratePreview ? "Can generate now" : "Unlocks after clone is ready"}</p>
+                            </div>
+                            <div className="rounded-2xl border border-border/70 bg-background/70 p-3">
+                              <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Agent voice result</p>
+                              <p className="mt-2 text-sm font-semibold text-foreground">
+                                {latestReadyGeneration
+                                  ? `Preview ready in ${latestReadyGeneration.presetName}`
+                                  : hasUsableSample
+                                    ? "Waiting for a generated preview"
+                                    : "Needs source voice first"}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="mt-4 rounded-2xl border border-border/70 bg-background/70 p-3">
+                            <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">What the agent will speak</p>
+                            <p className="mt-2 text-sm text-foreground">{previewScript}</p>
+                          </div>
+                          {latestReadyGeneration ? (
+                            <div className="mt-4 flex flex-wrap items-center gap-2">
+                              <Button onClick={() => handlePlayGeneration(latestReadyGeneration.id, latestReadyGeneration.text, voice.speechLanguage)} type="button" variant="outline">
+                                {playingGenerationId === latestReadyGeneration.id ? "Stop preview" : "Play latest preview"}
+                              </Button>
+                              <span className="text-xs text-muted-foreground">
+                                Generated {formatDateTime(latestReadyGeneration.completedAt ?? latestReadyGeneration.createdAt)}
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
+
                         <div className="flex flex-wrap gap-2">
-                          <Button disabled={isBusy} onClick={() => handleSaveStyle(voice.id, activeSettings.presetKey, activeSettings.tuning, previewScript)} type="button" variant="outline">Save preset</Button>
-                          <Button disabled={isBusy || (voice.mode === "custom" && voice.cloneStatus !== "ready")} onClick={() => handleRequestPreview(voice.id, activeSettings.presetKey, activeSettings.tuning, previewScript)} type="button">Generate preview</Button>
+                          <Button disabled={isBusy || presetName.trim().length < 2} onClick={() => handleSaveStyle(voice.id, activeSettings.presetKey, activeSettings.tuning, previewScript, presetName)} type="button" variant="outline">Save preset</Button>
+                          <Button disabled={isBusy || !canGeneratePreview} onClick={() => handleRequestPreview(voice.id, activeSettings.presetKey, activeSettings.tuning, previewScript, presetName)} type="button">Generate preview</Button>
                         </div>
                       </div>
                     </div>
@@ -716,7 +933,7 @@ export function VoiceLibraryWorkspace() {
                     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_320px]">
                       <div className="rounded-3xl border border-border/70 bg-background/70 p-5">
                         <div className="mb-4 flex items-center justify-between">
-                          <div><p className="text-base font-semibold text-foreground">Preview history</p><p className="text-sm text-muted-foreground">Recent generated previews stay here for QA before campaign launch.</p></div>
+                          <div><p className="text-base font-semibold text-foreground">4. Preview history</p><p className="text-sm text-muted-foreground">Use this as the QA area before this voice preset is attached to campaigns or agent calling flows.</p></div>
                           {waveformBars(Boolean(playingGenerationId))}
                         </div>
                         <div className="space-y-3">
@@ -727,7 +944,7 @@ export function VoiceLibraryWorkspace() {
                               <div className="rounded-2xl border border-border/70 bg-white p-4" key={generation.id}>
                                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                   <div className="space-y-2">
-                                    <div className="flex flex-wrap items-center gap-2"><Badge variant="outline">{presetLabel(generation.presetKey)}</Badge><Badge variant="secondary">{formatVoiceStatus(generation.status)}</Badge></div>
+                                    <div className="flex flex-wrap items-center gap-2"><Badge variant="outline">{generation.presetName ?? sentenceCase(presetLabel(generation.presetKey))}</Badge><Badge variant="secondary">{formatVoiceStatus(generation.status)}</Badge></div>
                                     <p className="text-sm text-foreground">{generation.text}</p>
                                     <p className="text-xs text-muted-foreground">{formatDateTime(generation.completedAt ?? generation.createdAt)} · {generation.generatedSeconds ?? 0}s · {generation.characterCount} chars</p>
                                   </div>
@@ -741,6 +958,7 @@ export function VoiceLibraryWorkspace() {
 
                       <div className="rounded-3xl border border-border/70 bg-background/70 p-5">
                         <p className="text-base font-semibold text-foreground">Readiness</p>
+                        <p className="mt-1 text-sm text-muted-foreground">This summary tells you whether this voice can already be used for live calling or still needs sample or clone work.</p>
                         <div className="mt-4 space-y-3">
                           <div className="rounded-2xl border border-border/70 bg-white px-4 py-3"><p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Clone state</p><p className="mt-2 text-sm font-semibold text-foreground">{formatVoiceStatus(voice.cloneStatus)}</p></div>
                           <div className="rounded-2xl border border-border/70 bg-white px-4 py-3"><p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">Latest job</p><p className="mt-2 text-sm font-semibold text-foreground">{voice.latestCloneJob ? formatVoiceStatus(voice.latestCloneJob.status) : voice.mode === "stock" ? "Stock ready" : "No job yet"}</p></div>
@@ -758,5 +976,11 @@ export function VoiceLibraryWorkspace() {
     </div>
   );
 }
+
+
+
+
+
+
 
 

@@ -55,6 +55,18 @@ function sanitizeVoiceTuning(input: {
   };
 }
 
+function presetLabel(
+  key:
+    | "sales_opener"
+    | "negotiation"
+    | "appointment_booking"
+    | "support_clarity"
+    | "payment_reminder"
+    | "local_outreach",
+) {
+  return key.replace(/_/g, " ");
+}
+
 function slugifyVoiceName(value: string) {
   return value
     .trim()
@@ -208,6 +220,7 @@ export const getVoiceLibrary = query({
           status: generation.status,
           provider: generation.provider,
           presetKey: generation.presetKey,
+          presetName: generation.presetName ?? presetLabel(generation.presetKey),
           playbackMode: generation.playbackMode ?? "browser_tts",
           creativity: generation.creativity,
           expressiveness: generation.expressiveness,
@@ -260,12 +273,16 @@ export const getVoiceLibrary = query({
           providerVoiceId: voiceProfile.providerVoiceId,
           stockVoiceKey: voiceProfile.stockVoiceKey,
           themePresetKey: voiceProfile.themePresetKey ?? "sales_opener",
+          presetName: voiceProfile.presetName ?? presetLabel(voiceProfile.themePresetKey ?? "sales_opener"),
           creativity: tuning.creativity,
           expressiveness: tuning.expressiveness,
           pace: tuning.pace,
           stability: tuning.stability,
           warmth: tuning.warmth,
           previewScript: voiceProfile.previewScript,
+          consentAccepted: Boolean(voiceProfile.consentAcceptedAt),
+          consentAcceptedAt: voiceProfile.consentAcceptedAt,
+          consentDisclaimerVersion: voiceProfile.consentDisclaimerVersion,
           lastPreviewGeneratedAt: voiceProfile.lastPreviewGeneratedAt,
           updatedAt: voiceProfile.updatedAt,
           latestSamples,
@@ -302,6 +319,7 @@ export const createVoiceProfile = mutation({
     language: v.union(v.literal("en-IN"), v.literal("hi-IN"), v.literal("hinglish")),
     mode: v.union(v.literal("custom"), v.literal("stock")),
     stockVoiceKey: v.optional(v.union(v.literal("bulbul_v2"), v.literal("bulbul_v3"))),
+    consentAccepted: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
@@ -314,6 +332,10 @@ export const createVoiceProfile = mutation({
 
     if (args.mode === "stock" && !args.stockVoiceKey) {
       throw new Error("Select a stock voice before creating this profile.");
+    }
+
+    if (args.mode === "custom" && !args.consentAccepted) {
+      throw new Error("Accept the voice consent terms before creating a cloned voice.");
     }
 
     const baseSlug = slugifyVoiceName(name) || `voice-${now}`;
@@ -350,6 +372,8 @@ export const createVoiceProfile = mutation({
       stability: defaults.stability,
       warmth: defaults.warmth,
       previewScript: undefined,
+      consentAcceptedAt: args.mode === "custom" && args.consentAccepted ? now : undefined,
+      consentDisclaimerVersion: args.mode === "custom" && args.consentAccepted ? "step_09_voice_terms_v1" : undefined,
       createdAt: now,
       updatedAt: now,
     });
@@ -367,6 +391,7 @@ export const createVoiceProfile = mutation({
         slug,
         mode: args.mode,
         stockVoiceKey: args.stockVoiceKey,
+        consentAccepted: args.consentAccepted ?? false,
       },
       createdAt: now,
     });
@@ -382,11 +407,32 @@ export const createVoiceProfile = mutation({
   },
 });
 
+export const acceptVoiceConsent = mutation({
+  args: {
+    organizationSlug: v.optional(v.string()),
+    voiceProfileId: v.id("voiceProfiles"),
+  },
+  handler: async (ctx, args) => {
+    const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
+    const voiceProfile = await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
+    const now = Date.now();
+
+    await ctx.db.patch(voiceProfile._id, {
+      consentAcceptedAt: now,
+      consentDisclaimerVersion: "step_09_voice_terms_v1",
+      updatedAt: now,
+    });
+
+    return { voiceProfileId: voiceProfile._id, consentAcceptedAt: now };
+  },
+});
+
 export const updateVoiceProfileStyle = mutation({
   args: {
     organizationSlug: v.optional(v.string()),
     voiceProfileId: v.id("voiceProfiles"),
     themePresetKey: themePresetValidator,
+    presetName: v.optional(v.string()),
     creativity: v.number(),
     expressiveness: v.number(),
     pace: v.number(),
@@ -402,6 +448,7 @@ export const updateVoiceProfileStyle = mutation({
 
     await ctx.db.patch(voiceProfile._id, {
       themePresetKey: args.themePresetKey,
+      presetName: args.presetName?.trim() || presetLabel(args.themePresetKey),
       ...tuning,
       previewScript: args.previewScript?.trim() || undefined,
       updatedAt: now,
@@ -417,6 +464,7 @@ export const updateVoiceProfileStyle = mutation({
       summary: `Updated voice tuning for ${voiceProfile.name}.`,
       metadata: {
         themePresetKey: args.themePresetKey,
+        presetName: args.presetName?.trim() || presetLabel(args.themePresetKey),
         ...tuning,
       },
       createdAt: now,
@@ -453,6 +501,10 @@ export const saveUploadedVoiceSample = mutation({
     const viewerContext = await requireViewerContext(ctx, args.organizationSlug);
     const voiceProfile = await getVoiceProfileOrThrow(ctx, viewerContext.organization._id, args.voiceProfileId);
     const now = Date.now();
+
+    if (voiceProfile.mode === "custom" && !voiceProfile.consentAcceptedAt) {
+      throw new Error("Accept the voice consent terms before uploading samples.");
+    }
 
     await ctx.db.insert("voiceSamples", {
       organizationId: viewerContext.organization._id,
@@ -556,6 +608,10 @@ export const requestCloneTraining = mutation({
       throw new Error("Stock voices do not require clone training.");
     }
 
+    if (!voiceProfile.consentAcceptedAt) {
+      throw new Error("Accept the voice consent terms before starting clone training.");
+    }
+
     if (voiceProfile.sampleCount < MINIMUM_REFERENCE_SAMPLES) {
       throw new Error(`Upload at least ${MINIMUM_REFERENCE_SAMPLES} reference samples before starting clone training.`);
     }
@@ -612,6 +668,7 @@ export const requestVoicePreviewGeneration = mutation({
     voiceProfileId: v.id("voiceProfiles"),
     text: v.string(),
     presetKey: themePresetValidator,
+    presetName: v.optional(v.string()),
     creativity: v.number(),
     expressiveness: v.number(),
     pace: v.number(),
@@ -641,6 +698,7 @@ export const requestVoicePreviewGeneration = mutation({
       status: "queued",
       provider,
       presetKey: args.presetKey,
+      presetName: args.presetName?.trim() || presetLabel(args.presetKey),
       ...tuning,
       text,
       characterCount: text.length,
@@ -821,6 +879,9 @@ export const completeVoicePreviewGeneration = internalMutation({
     });
   },
 });
+
+
+
 
 
 

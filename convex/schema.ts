@@ -131,12 +131,15 @@ export default defineSchema({
     stockVoiceKey: v.optional(v.string()),
     providerVoiceId: v.optional(v.string()),
     themePresetKey: v.optional(themePreset),
+    presetName: v.optional(v.string()),
     creativity: v.optional(v.number()),
     expressiveness: v.optional(v.number()),
     pace: v.optional(v.number()),
     stability: v.optional(v.number()),
     warmth: v.optional(v.number()),
     previewScript: v.optional(v.string()),
+    consentAcceptedAt: v.optional(v.number()),
+    consentDisclaimerVersion: v.optional(v.string()),
     cloneJobRequestedAt: v.optional(v.number()),
     lastCloneJobAt: v.optional(v.number()),
     lastCloneError: v.optional(v.string()),
@@ -205,6 +208,7 @@ export default defineSchema({
       v.literal("custom_preview"),
     ),
     presetKey: themePreset,
+    presetName: v.optional(v.string()),
     playbackMode: v.optional(
       v.union(v.literal("browser_tts"), v.literal("stored_audio")),
     ),
@@ -224,5 +228,3 @@ export default defineSchema({
     .index("by_voice_profile", ["voiceProfileId"])
     .index("by_organization_and_created_at", ["organizationId", "createdAt"]),
 });
-
-
